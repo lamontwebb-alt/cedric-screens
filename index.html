@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <!--
-Cedric's screens: Tasks and Make, a Telegram Mini App. Spec: Cedric/SPEC-miniapp-v0.md. Look: sketch B v2.
-This page holds no data. Everything comes from Supabase functions that first check Telegram's signed launch data
-(only Lamont, only from Cedric's bot, under 24 hours old). Published to GitHub Pages by screens/publish.sh.
-All text from mail and documents is inserted as text, never as HTML.
+Cedric's screens: Tasks and Make, a Telegram Mini App. Spec: Cedric/SPEC-miniapp-v0.md (Part 2 = v2). Contract: screens/CONTRACT-v2.md.
+Look: sketch B v2. This page holds no data. Everything comes from Supabase functions that first check Telegram's signed
+launch data (only Lamont, only from Cedric's bot, under 24 hours old). Published to GitHub Pages by screens/publish.sh.
+All text from mail and documents is inserted as text, never as HTML (the reader's markdown is escaped first by md()).
+v2: instant Done/Later/Hold/Bring back (optimistic, Undo for Done), queued actions show their state and Cedric's answer
+on the card, offline note, Tasks/Make swipe panes.
 -->
 <html lang="en">
 <head>
@@ -14,23 +16,28 @@ All text from mail and documents is inserted as text, never as HTML.
 <style>
   :root{
     --page:#F5F6F3; --card:#FFFFFF; --line:#E1E3DE; --ink:#16212C; --soft:#55606C; --faint:#8A939C;
-    --navy:#1E3550; --navy-tint:#E8EDF3; --on-navy:#FFFFFF; --brass:#A9874F; --inset:#F1F3F0; --dim:rgba(14,22,30,.45); --bar:#FBFBF9;
+    --navy:#1E3550; --navy-tint:#E8EDF3; --on-navy:#FFFFFF; --brass:#A9874F; --inset:#F1F3F0; --dim:rgba(14,22,30,.45); --bar:#FBFBF9; --warn:#85652E;
   }
   :root.dark{
     --page:#0F151C; --card:#18212B; --line:#26313D; --ink:#E9ECEF; --soft:#9AA6B2; --faint:#6F7B87;
-    --navy:#B9CBE0; --navy-tint:#22303F; --on-navy:#0F151C; --brass:#8E7546; --inset:#121A23; --dim:rgba(0,0,0,.55); --bar:#141C25;
+    --navy:#B9CBE0; --navy-tint:#22303F; --on-navy:#0F151C; --brass:#8E7546; --inset:#121A23; --dim:rgba(0,0,0,.55); --bar:#141C25; --warn:#C9A86E;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html,body{background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
-  body{min-height:100vh}
+  html,body{height:100%;overflow:hidden;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-  main{padding:10px 18px 110px}
+  /* Two side-by-side panes; the row snaps horizontally, each pane scrolls on its own (so each keeps its place). */
+  .panes{position:fixed;inset:0;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
+  .panes::-webkit-scrollbar{display:none}
+  .pane{flex:0 0 100%;width:100%;height:100%;overflow-y:auto;overflow-x:hidden;scroll-snap-align:start;scroll-snap-stop:always;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+  main{padding:10px 18px 110px;min-height:100%}
   .top{display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px}
   .who{display:flex;align-items:center;gap:10px}
   .mono{width:34px;height:34px;border-radius:9px;background:var(--navy);color:var(--on-navy);display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 18px/1 Georgia,"Times New Roman",serif}
   .mono i{display:block;width:14px;height:2px;background:var(--brass);margin-top:3px;border-radius:1px}
   .who b{font-size:17px;font-weight:600}
   .who span{display:block;font-size:13px;color:var(--soft);margin-top:1px}
+  .who .off{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font-style:normal;font-weight:600;color:var(--warn)}
+  .who .off::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--warn)}
   .right{display:flex;align-items:center;gap:12px}
   .sw{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--soft)}
   .track{width:42px;height:25px;border-radius:13px;background:var(--line);position:relative;flex:none;transition:background .15s}
@@ -44,16 +51,17 @@ All text from mail and documents is inserted as text, never as HTML.
   .m-need{background:var(--navy)} .m-work{border:2px solid var(--navy);background:linear-gradient(90deg,var(--navy) 50%,transparent 50%)} .m-wait{border:2px solid var(--faint)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px 16px 12px;margin-bottom:8px}
   .thead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-  .t-title{font-size:18px;line-height:1.3;font-weight:600}
+  .t-title{font-size:18px;line-height:1.3;font-weight:600;min-width:0;overflow-wrap:anywhere}
   .chev{flex:none;margin-top:3px;color:var(--faint);transition:transform .15s}
   .open .chev{transform:rotate(180deg);color:var(--navy)}
   .t-detail{font-size:15.5px;line-height:1.4;color:var(--soft);margin-top:4px;display:flex;align-items:baseline;gap:8px}
   .t-detail .txt{flex:1;min-width:0}
   :not(.open) > .t-detail .txt{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .tag{font-size:12.5px;font-weight:600;color:var(--navy);background:var(--navy-tint);border-radius:6px;padding:2px 7px;white-space:nowrap}
-  .actions{display:flex;align-items:center;justify-content:space-between;margin-top:9px;gap:10px}
-  .quiet{font-size:16px;font-weight:600;color:var(--soft);padding:10px 4px}
-  .go{font-size:16.5px;font-weight:600;color:var(--on-navy);background:var(--navy);border-radius:12px;min-height:44px;padding:0 20px;display:flex;align-items:center;gap:8px}
+  .actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:9px;gap:6px 10px}
+  .actions .others{display:flex;flex-wrap:wrap;gap:0 6px;min-width:0}
+  .quiet{font-size:16px;font-weight:600;color:var(--soft);padding:10px 4px;text-align:left}
+  .go{font-size:16.5px;font-weight:600;color:var(--on-navy);background:var(--navy);border-radius:12px;min-height:44px;padding:9px 20px;display:flex;align-items:center;gap:8px;max-width:100%;margin-left:auto;text-align:left;line-height:1.25}
   .note{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;font-weight:600;color:var(--navy);margin-top:2px;padding:6px 0}
   .queued{font-size:15px;color:var(--soft);margin-top:10px;font-weight:500}
   .more{background:var(--inset);border-radius:12px;padding:11px 13px;margin-top:10px;font-size:15px;line-height:1.42;white-space:pre-wrap;word-wrap:break-word}
@@ -61,10 +69,25 @@ All text from mail and documents is inserted as text, never as HTML.
   .more .body{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
   .more .kv{display:flex;justify-content:space-between;gap:12px;padding:2px 0;white-space:normal} .more .kv span{color:var(--soft)}
   .link{display:inline-block;margin-top:8px;font-size:14.5px;font-weight:600;color:var(--navy)}
+  /* The small thread: his note, then where it stands or Cedric's answer. */
+  .thread{margin-top:10px;border-left:2px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:5px}
+  .th-me{font-size:15.5px;line-height:1.4;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+  .th-me.code{color:var(--soft)} .th-me.code b{color:var(--ink);font-weight:600}
+  .th-ced{font-size:15.5px;line-height:1.4;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere} .th-ced b{color:var(--navy);font-weight:700}
+  .th-st{font-size:14.5px;line-height:1.35;color:var(--soft);display:flex;flex-wrap:wrap;align-items:center;gap:0 14px}
+  .th-st .s{padding:3px 0} .th-st.offline .s{flex-basis:100%;color:var(--warn);font-weight:600}
+  .th-st.fail .s{color:var(--ink)}
+  .th-btn{font-size:14.5px;font-weight:600;color:var(--navy);padding:6px 0}
+  .th-gap{height:4px}
+  .ghost{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px}
+  .ghost .g-t{flex:1;min-width:0;font-size:16px;color:var(--faint);text-decoration:line-through;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ghost .g-a{flex:none;display:flex;align-items:center;gap:7px;font-size:16px;font-weight:600;color:var(--soft)}
+  .ghost .g-a button{color:var(--navy);font-weight:700;padding:8px 2px}
   .list{background:var(--card);border:1px solid var(--line);border-radius:18px}
   .row{padding:11px 16px;border-top:1px solid var(--line)} .row:first-child{border-top:0}
   .row .t-title{font-size:17px} .row .t-detail{font-size:15px;margin-top:3px}
   .row .actions{margin-top:2px;justify-content:flex-start}
+  .back-at{color:var(--ink);font-weight:600}
   .empty{font-size:17px;color:var(--soft);padding:24px 2px}
   .mk{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:8px}
   .mk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -98,7 +121,10 @@ All text from mail and documents is inserted as text, never as HTML.
 </style>
 </head>
 <body>
-<main id="main"><div class="msg">Loading…</div></main>
+<div class="panes" id="panes">
+  <section class="pane" id="pane-tasks" data-pane="tasks"><main id="tasksMain"><div class="msg">Loading…</div></main></section>
+  <section class="pane" id="pane-make" data-pane="make"><main id="makeMain"><div class="msg">Loading…</div></main></section>
+</div>
 
 <nav class="tabs">
   <button class="tab" data-tab="chat"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/></svg>Chat</button>
@@ -109,10 +135,10 @@ All text from mail and documents is inserted as text, never as HTML.
 <div class="dimmer" id="dimmer"></div>
 <div class="sheet" id="sheet">
   <div class="grab"></div>
-  <div class="sh-k">Note to Cedric about:</div>
+  <div class="sh-k" id="sheetKicker">Note to Cedric about:</div>
   <div class="sh-t" id="sheetTitle"></div>
   <textarea id="noteText" placeholder="Tell Cedric more. The microphone on your keyboard works too."></textarea>
-  <div class="sh-help">Cedric reads it and answers in the chat. A note is never a yes to send or pay.</div>
+  <div class="sh-help">Cedric answers here on the card. A note is never a yes to send or pay.</div>
   <div class="sh-act"><button class="quiet" id="noteCancel">Cancel</button><button class="go" id="noteSend">Send to Cedric</button></div>
 </div>
 <div class="reader" id="reader"></div>
@@ -123,9 +149,20 @@ All text from mail and documents is inserted as text, never as HTML.
 const CONFIG = { url: "https://aeneuhxfhlygzanmztgg.supabase.co", key: "sb_publishable_oIjULBUKHtL16NFY1iD9Xg_Q-c7X9iP" };
 const tg = window.Telegram && window.Telegram.WebApp;
 const INIT = tg ? tg.initData : "";
-const state = { tab: localStorage.getItem("cedric.tab") || "tasks", tasks: null, make: null, open: new Set(),
+const PANES = ["tasks", "make"];
+const INSTANT = new Set(["done", "later", "hold", "unhold"]);
+const NY = "America/New_York";
+const OFFLINE_MS = 90e3, UNDO_MS = 5000, POLL_MS = 10e3, EDGE_PX = 24;
+const state = {
+  tab: PANES.includes(localStorage.getItem("cedric.tab")) ? localStorage.getItem("cedric.tab") : "tasks",
+  tasks: null, make: null, error: null, skew: 0, sig: "",
+  open: { tasks: new Set(), make: new Set() },
   detail: { tasks: localStorage.getItem("cedric.detail.tasks") === "1", make: localStorage.getItem("cedric.detail.make") === "1" },
-  noteFor: null };
+  over: new Map(),   // loop id -> optimistic changes laid over the last server read, until the server has caught up
+  undo: new Map(),   // loop id -> "Done · Undo" ghost for 5 s
+  clock: 0, sheet: null, drafts: {}
+};
+try { state.drafts = JSON.parse(sessionStorage.getItem("cedric.drafts") || "{}") || {}; } catch (e) { state.drafts = {}; }
 const SOURCE = { gmail: "Gmail", calendar: "Calendar", ticktick: "TickTick", tiller: "Bank", bank: "Bank", chat: "Chat", campaign: "Plan", health: "Health", cedric: "Cedric" };
 const $ = (s, r) => (r || document).querySelector(s);
 
@@ -144,20 +181,39 @@ const ICON = {
   pen: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M10.5 2.5l3 3L6 13H3v-3z"/><path d="M9 4l3 3"/></svg>',
   pin: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7 2.5h6l-1 5 3 3v1.5H5V10.5l3-3z"/><path d="M10 12v6" stroke-linecap="round"/></svg>',
   pinOn: '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 2.5h6l-1 5 3 3v1.5H5V10.5l3-3z" fill="currentColor"/><path d="M10 12v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  refresh: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a6 6 0 1 1-1.8-4.3"/><path d="M16 3.5v3.5h-3.5"/></svg>'
+  refresh: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a6 6 0 1 1-1.8-4.3"/><path d="M16 3.5v3.5h-3.5"/></svg>',
+  check: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5l3.5 3.5 7.5-8"/></svg>'
 };
 
+// ---------- talking to the database ----------
 async function rpc(fn, args) {
-  const r = await fetch(CONFIG.url + "/rest/v1/rpc/" + fn, { method: "POST",
-    headers: { "Content-Type": "application/json", apikey: CONFIG.key, ...(CONFIG.key.startsWith("eyJ") ? { Authorization: "Bearer " + CONFIG.key } : {}) },
-    body: JSON.stringify({ p_init: INIT, ...args }) });
+  let r;
+  try {
+    r = await fetch(CONFIG.url + "/rest/v1/rpc/" + fn, { method: "POST",
+      headers: { "Content-Type": "application/json", apikey: CONFIG.key, ...(CONFIG.key.startsWith("eyJ") ? { Authorization: "Bearer " + CONFIG.key } : {}) },
+      body: JSON.stringify({ p_init: INIT, ...args }) });
+  } catch (e) { const x = new Error("network"); x.network = true; throw x; }
   if (!r.ok) { const t = await r.text(); throw new Error(r.status === 403 || /not allowed/.test(t) ? "not-allowed" : "HTTP " + r.status); }
   const t = await r.text(); return t ? JSON.parse(t) : null;
 }
+function newId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = b[6] & 15 | 64; b[8] = b[8] & 63 | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+  return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+}
+// Every action carries its own client_id; a network failure is retried once with the SAME id, so it can never land twice.
+async function act(a) {
+  const p_action = { client_id: newId(), ...a };
+  try { return await rpc("cedric_screen_act", { p_action }); }
+  catch (e) { if (!e.network) throw e; await new Promise(r => setTimeout(r, 1200)); return await rpc("cedric_screen_act", { p_action }); }
+}
+
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = "none", 3200); }
 function haptic(kind) { try { tg && tg.HapticFeedback && (kind === "ok" ? tg.HapticFeedback.notificationOccurred("success") : tg.HapticFeedback.impactOccurred("light")); } catch (e) {} }
+const nowMs = () => Date.now() - state.skew;   // the database's clock, so a phone clock that is off doesn't fake "offline"
 function when(iso) {
-  if (!iso) return ""; const d = new Date(iso), now = new Date(), day = 864e5;
+  if (!iso) return ""; const d = new Date(iso), now = new Date(nowMs()), day = 864e5;
   const days = Math.round((new Date(d.toDateString()) - new Date(now.toDateString())) / day);
   const t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   if (days === 0) return "today " + t; if (days === 1) return "tomorrow"; if (days === -1) return "yesterday";
@@ -165,14 +221,81 @@ function when(iso) {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+// Day labels in New York time, same rule as the database's later.label: Tomorrow / Sunday (within 6 days) / Mon Oct 26.
+function nyDay(ms) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: NY, year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return Math.round(Date.UTC(+p.year, +p.month - 1, +p.day) / 864e5);
+}
+function dayLabel(iso) {
+  const ms = Date.parse(iso), diff = nyDay(ms) - nyDay(nowMs());
+  if (diff === 0) return "today"; if (diff === 1) return "Tomorrow";
+  if (diff > 1 && diff <= 6) return new Date(ms).toLocaleDateString("en-US", { timeZone: NY, weekday: "long" });
+  return new Date(ms).toLocaleDateString("en-US", { timeZone: NY, weekday: "short", month: "short", day: "numeric" }).replace(",", "");
+}
+function clock(iso) { return new Date(iso).toLocaleTimeString("en-US", { timeZone: NY, hour: "numeric", minute: "2-digit" }).replace(":00", ""); }
+function backLine(it) { return it.bring_back_at ? "Back " + (it._backLabel || dayLabel(it.bring_back_at)) + " " + clock(it.bring_back_at) : null; }
+function laterLabel() { return (state.tasks && state.tasks.later && state.tasks.later.label) || "Later"; }
 
-function header(sub, which) {
+// ---------- what the screen shows = last server read + optimistic changes ----------
+function groupOf(x) {
+  if (x.status === "held" && x.bring_back_at && Date.parse(x.bring_back_at) <= nowMs() && x.owner === "lamont") return "needs";
+  if (x.status === "held") return "wait";
+  if (x.owner === "lamont" && (x.status === "open" || x.status === "waiting_lamont")) return "needs";
+  return "working";
+}
+function overFor(id) {
+  let o = state.over.get(id);
+  if (!o) { o = { patch: {}, add: [], hide: new Set(), edits: {}, inflight: 0, resolvedAt: 0, front: false }; state.over.set(id, o); }
+  return o;
+}
+function begin(id) { const o = overFor(id); o.inflight++; return o; }
+function settle(o) { o.inflight = Math.max(0, o.inflight - 1); o.resolvedAt = ++state.clock; }
+function drop(id) { state.over.delete(id); }
+function applyOver(it) {
+  const o = state.over.get(it.id); if (!o) return it;
+  const x = { ...it, ...o.patch };
+  let th = (it.thread || []).filter(e => !o.hide.has(e.action_id)).map(e => o.edits[e.action_id] != null ? { ...e, note: o.edits[e.action_id] } : e);
+  th = th.concat(o.add.filter(e => !th.some(t => t.action_id && t.action_id === e.action_id)));
+  x.thread = th;
+  let p = it.pending && !o.hide.has(it.pending.action_id) ? it.pending : null;
+  if (p && o.edits[p.action_id] != null) p = { ...p, note: o.edits[p.action_id] };
+  const live = th.filter(e => e.status === "queued" || e.status === "claimed");
+  x.pending = live.length ? live[live.length - 1] : p;
+  return x;
+}
+function view() {
+  const d = state.tasks, out = { needs: [], working: [], wait: [] }, moved = [];
+  for (const g of ["needs", "working", "wait"]) for (const it of (d[g] || [])) {
+    const o = state.over.get(it.id); const x = applyOver(it);
+    if (x.status === "closed" || x.status === "done") continue;
+    const ng = o && "status" in o.patch ? groupOf(x) : g;   // only a tapped Done/Later/Hold/Bring back moves a card
+    if (ng === g && !(o && o.front)) out[g].push(x); else moved.push([ng, x]);
+  }
+  for (const [g, x] of moved) out[g].unshift(x);
+  for (const [id, gh] of state.undo) {
+    if (out.needs.some(x => x.id === id) || out.working.some(x => x.id === id) || out.wait.some(x => x.id === id)) continue;
+    const arr = out[gh.group]; arr.splice(Math.min(gh.index, arr.length), 0, { ...gh.item, _ghost: gh });
+  }
+  return out;
+}
+const bridgeStale = () => { const b = state.tasks && state.tasks.bridge_seen_at; return !b || nowMs() - Date.parse(b) > OFFLINE_MS; };
+const waitingOffline = e => e && e.status === "queued" && nowMs() - Date.parse(e.created_at || nowMs()) > OFFLINE_MS && bridgeStale();
+function anyOffline(v) { return ["needs", "working", "wait"].some(g => v[g].some(x => !x._ghost && ((x.thread || []).some(waitingOffline) || waitingOffline(x.pending)))); }
+function anyPending() {
+  if (!state.tasks) return false;
+  for (const g of ["needs", "working", "wait"]) for (const it of (state.tasks[g] || [])) if (it.pending) return true;
+  for (const o of state.over.values()) if (o.add.length) return true;
+  return false;
+}
+
+// ---------- pieces of a card ----------
+function header(sub, which, offline) {
   const sw = el("button", { class: "sw" + (state.detail[which] ? " on" : ""), onclick: () => {
     state.detail[which] = !state.detail[which]; localStorage.setItem("cedric.detail." + which, state.detail[which] ? "1" : "0"); haptic(); render(); } },
     "Detail", el("span", { class: "track" }));
   const rf = el("button", { class: "refresh", "aria-label": "Refresh", onclick: () => load(true) }, svg(ICON.refresh));
   return el("div", { class: "top" },
-    el("div", { class: "who" }, el("div", { class: "mono" }, "C", el("i")), el("div", {}, el("b", {}, "Cedric"), el("span", {}, sub))),
+    el("div", { class: "who" }, el("div", { class: "mono" }, "C", el("i")), el("div", {}, el("b", {}, "Cedric"), el("span", {}, sub, offline ? el("em", { class: "off" }, "Cedric offline") : null))),
     el("div", { class: "right" }, sw, rf));
 }
 
@@ -190,47 +313,93 @@ function moreBox(p, link) {
   return box.childNodes.length ? box : null;
 }
 
+// His note (or the action he chose), then where it stands: Saved / on it / Cedric's answer / Didn't work.
+function threadBox(it, open) {
+  let th = it.thread || [];
+  if (it.pending && !th.some(e => e.action_id === it.pending.action_id)) th = th.concat([it.pending]);
+  if (!th.length) return null;
+  const shown = open ? th : th.slice(-2);
+  const box = el("div", { class: "thread" });
+  shown.forEach((e, i) => {
+    if (i) box.append(el("div", { class: "th-gap" }));
+    if (e.code === "note") box.append(el("div", { class: "th-me" }, e.note || ""));
+    else box.append(el("div", { class: "th-me code" }, "You chose: ", el("b", {}, e.label || e.code)));
+    const last = e === th[th.length - 1];
+    if (e.status === "queued") {
+      const off = waitingOffline(e);
+      box.append(el("div", { class: "th-st" + (off ? " offline" : "") },
+        el("span", { class: "s" }, off ? "Saved. Cedric's computer is offline; this will wait." : "Saved · waiting for Cedric"),
+        e.code === "note" && e.action_id ? el("button", { class: "th-btn", onclick: () => openNote(it, e) }, "Change") : null,
+        e.action_id ? el("button", { class: "th-btn", onclick: () => cancelAction(it, e) }, "Cancel") : null));
+    } else if (e.status === "claimed") {
+      box.append(el("div", { class: "th-st" }, el("span", { class: "s" }, "Cedric is on it")));
+    } else if (e.status === "failed") {
+      box.append(el("div", { class: "th-st fail" }, el("span", { class: "s" }, "Didn't work: " + (e.answer || "something went wrong") + "."),
+        last && !it.pending ? el("button", { class: "th-btn", onclick: () => retry(it, e) }, "Try again") : null));
+    } else if (e.answer) {
+      box.append(el("div", { class: "th-ced" }, el("b", {}, "Cedric: "), e.answer));
+    }
+  });
+  return box;
+}
+function noteButton(it) { return el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), state.drafts[it.id] ? "Finish your note" : "Add a note"); }
+function toggleOpen(it) { const s = state.open.tasks; s.has(it.id) ? s.delete(it.id) : s.add(it.id); render("tasks"); }
+function choiceLabel(c) { return c.code === "later" && (!c.label || /^later$/i.test(c.label)) ? laterLabel() : c.label; }
+
+function ghostCard(it) {
+  return el("div", { class: "card ghost" }, el("div", { class: "g-t" }, it.title),
+    el("div", { class: "g-a" }, svg(ICON.check), "Done", el("span", {}, "·"), el("button", { onclick: () => undoDone(it.id) }, "Undo")));
+}
 function taskCard(it) {
-  const open = state.detail.tasks || state.open.has(it.id);
+  if (it._ghost) return ghostCard(it);
+  const open = state.detail.tasks || state.open.tasks.has(it.id);
   const choices = Array.isArray(it.choices) && it.choices.length ? it.choices : [{ code: "later", label: "Later" }, { code: "done", label: "Done", primary: true }];
   const primary = choices.find(c => c.primary) || choices[choices.length - 1];
   const others = choices.filter(c => c !== primary);
   const needsReview = it.preview && it.preview.draft && !open;
   const card = el("div", { class: "card" + (open ? " open" : "") });
-  const head = el("div", { class: "thead", onclick: () => { state.open.has(it.id) ? state.open.delete(it.id) : state.open.add(it.id); render(); } },
-    el("div", { class: "t-title" }, it.title), svg(ICON.chev));
+  const head = el("div", { class: "thead", onclick: () => toggleOpen(it) }, el("div", { class: "t-title" }, it.title), svg(ICON.chev));
   card.append(head, el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, it.detail || (it.due ? "Due " + when(it.due) : ""))));
   if (open) { const m = moreBox(it.preview, it.source_link); if (m) card.append(m); }
-  if (it.queued) { card.append(el("div", { class: "queued" }, "Sent to Cedric. He'll confirm in the chat.")); return card; }
-  const acts = el("div", { class: "actions" },
-    el("div", {}, ...others.map(c => el("button", { class: "quiet", onclick: () => tap(it, c) }, c.label))),
-    el("button", { class: "go", onclick: () => needsReview ? (state.open.add(it.id), render()) : tap(it, primary) }, needsReview ? "Review" : primary.label));
-  card.append(acts, el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), "Add a note"));
+  const th = threadBox(it, open); if (th) card.append(th);
+  // While Cedric holds a chosen action (not just a note), the buttons wait; Cancel is on the thread line.
+  if (!(it.pending && it.pending.code !== "note")) {
+    card.append(el("div", { class: "actions" },
+      el("div", { class: "others" }, ...others.map(c => el("button", { class: "quiet", onclick: () => tap(it, c) }, choiceLabel(c)))),
+      el("button", { class: "go", onclick: () => needsReview ? (state.open.tasks.add(it.id), render("tasks")) : tap(it, primary) }, needsReview ? "Review" : choiceLabel(primary))));
+  }
+  card.append(noteButton(it));
   return card;
 }
 function rowItem(it, kind) {
-  const open = state.detail.tasks || state.open.has(it.id);
-  const sub = kind === "wait" ? (it.held_since ? "Held since " + when(it.held_since) + ". " : "") + (it.detail || "") : (it.detail || "");
+  if (it._ghost) return el("div", { class: "row" }, ghostCard(it));
+  const open = state.detail.tasks || state.open.tasks.has(it.id);
+  let sub = it.detail || "";
+  if (kind === "wait") {
+    const back = backLine(it);
+    sub = [back ? el("span", { class: "back-at" }, back + ". ") : (it.held_since ? "Held since " + when(it.held_since) + ". " : "Held. "), it.detail || ""];
+  }
   const row = el("div", { class: "row" + (open ? " open" : "") },
-    el("div", { class: "thead", onclick: () => { state.open.has(it.id) ? state.open.delete(it.id) : state.open.add(it.id); render(); } }, el("div", { class: "t-title" }, it.title), svg(ICON.chev)),
+    el("div", { class: "thead", onclick: () => toggleOpen(it) }, el("div", { class: "t-title" }, it.title), svg(ICON.chev)),
     el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, sub)));
   if (open) { const m = moreBox(it.preview, it.source_link); if (m) row.append(m); }
-  if (it.queued) row.append(el("div", { class: "queued" }, "Sent to Cedric."));
-  else if (kind === "wait" && open) row.append(el("div", { class: "actions" }, el("button", { class: "quiet", onclick: () => tap(it, { code: "unhold", label: "Bring it back now" }) }, "Bring it back now"), el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), "Add a note")));
-  else if (open) row.append(el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), "Add a note"));
+  const th = threadBox(it, open); if (th) row.append(th);
+  if (kind === "wait" && open) row.append(el("div", { class: "actions" }, el("button", { class: "quiet", onclick: () => tap(it, { code: "unhold", label: "Bring it back now" }) }, "Bring it back now"), noteButton(it)));
+  else if (open || th) row.append(noteButton(it));
   return row;
 }
 
 function renderTasks(main) {
-  const d = state.tasks; const n = d.needs.length, w = d.working.length, h = d.wait.length;
-  const now = new Date(); const part = now.getHours() < 12 ? "morning" : now.getHours() < 17 ? "afternoon" : "evening";
-  main.append(header(now.toLocaleDateString([], { weekday: "long" }) + " " + part, "tasks"));
+  const v = view(); const real = a => a.filter(x => !x._ghost).length;
+  const n = real(v.needs), w = real(v.working), h = real(v.wait);
+  const now = new Date(nowMs()); const part = now.getHours() < 12 ? "morning" : now.getHours() < 17 ? "afternoon" : "evening";
+  main.append(header(now.toLocaleDateString([], { weekday: "long" }) + " " + part, "tasks", anyOffline(v)));
   const rest = [w ? plural(w, "thing", "things").replace(/thing(s?)$/, "I'm working on") : "", h ? h + " can wait" : ""].filter(Boolean).join(", ");
   main.append(n ? el("h1", {}, plural(n, "thing needs you.", "things need you.") + " ", el("span", { class: "q" }, rest ? rest.charAt(0).toUpperCase() + rest.slice(1) + "." : ""))
                 : el("h1", {}, "Nothing needs you. ", el("span", { class: "q" }, rest ? rest.charAt(0).toUpperCase() + rest.slice(1) + "." : "")));
-  if (n) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-need" }), "Needs you")); d.needs.forEach(it => main.append(taskCard(it))); }
-  if (w) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-work" }), "Working on it"), el("div", { class: "list" }, d.working.map(it => rowItem(it, "work")))); }
-  if (h) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-wait" }), "Can wait"), el("div", { class: "list" }, d.wait.map(it => rowItem(it, "wait")))); }
+  if (v.needs.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-need" }), "Needs you")); v.needs.forEach(it => main.append(taskCard(it))); }
+  if (v.working.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-work" }), "Working on it"), el("div", { class: "list" }, v.working.map(it => rowItem(it, "work")))); }
+  if (v.wait.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-wait" }), "Can wait"), el("div", { class: "list" }, v.wait.map(it => rowItem(it, "wait")))); }
 }
 
 function makeCard(m) {
@@ -243,7 +412,7 @@ function makeCard(m) {
   return card;
 }
 function renderMake(main) {
-  main.append(header("Finished work", "make"));
+  main.append(header("Finished work", "make", state.tasks ? anyOffline(view()) : false));
   const items = state.make || [];
   main.append(el("h1", {}, "Things I made for you. ", el("span", { class: "q" }, items.some(m => m.pinned) ? "Pinned ones stay on top." : "")));
   if (!items.length) { main.append(el("div", { class: "empty" }, "Nothing yet. Tonight's overview lands here after the 9 PM brief.")); return; }
@@ -277,59 +446,194 @@ function openReader(m) {
   const p = m.preview || {};
   if (Array.isArray(p.numbers) && p.numbers.length) r.append(el("div", { class: "nums" }, p.numbers.map(x => el("div", {}, el("span", {}, x.label), el("b", {}, x.value), x.note ? el("small", {}, x.note) : null))));
   const body = el("div", { class: "md" }); body.innerHTML = md(m.body || p.line || ""); r.append(body);
-  r.style.display = "block"; r.scrollTop = 0; tg && tg.BackButton && tg.BackButton.show();
+  r.style.display = "block"; r.scrollTop = 0; syncBack();
 }
-function closeReader() { $("#reader").style.display = "none"; tg && tg.BackButton && tg.BackButton.hide(); }
+function closeReader() { $("#reader").style.display = "none"; syncBack(); }
+function syncBack() { if (!tg || !tg.BackButton) return; (state.sheet || $("#reader").style.display === "block") ? tg.BackButton.show() : tg.BackButton.hide(); }
 
-function openNote(it) { state.noteFor = it; $("#sheetTitle").textContent = it.title; $("#noteText").value = ""; $("#dimmer").style.display = "block"; $("#sheet").style.display = "block"; setTimeout(() => $("#noteText").focus(), 50); }
-function closeNote() { state.noteFor = null; $("#dimmer").style.display = "none"; $("#sheet").style.display = "none"; }
-$("#noteCancel").onclick = closeNote; $("#dimmer").onclick = closeNote;
+// ---------- the note sheet (new note, or Change on a queued one); a half-written note survives closing and swiping ----------
+function saveDrafts() { try { sessionStorage.setItem("cedric.drafts", JSON.stringify(state.drafts)); } catch (e) {} }
+function openNote(it, entry) {
+  const key = entry ? "change:" + entry.action_id : it.id;
+  state.sheet = { it, entry, key };
+  $("#sheetKicker").textContent = entry ? "Change your note about:" : "Note to Cedric about:";
+  $("#sheetTitle").textContent = it.title;
+  $("#noteSend").textContent = entry ? "Save the change" : "Send to Cedric";
+  $("#noteCancel").textContent = entry ? "Keep it as is" : "Cancel";
+  $("#noteText").value = state.drafts[key] != null ? state.drafts[key] : (entry ? entry.note || "" : "");
+  $("#dimmer").style.display = "block"; $("#sheet").style.display = "block"; syncBack();
+  setTimeout(() => $("#noteText").focus(), 50);
+}
+function closeNote(discard) {
+  if (state.sheet && discard) { delete state.drafts[state.sheet.key]; saveDrafts(); }
+  state.sheet = null; $("#dimmer").style.display = "none"; $("#sheet").style.display = "none"; syncBack(); render("tasks");
+}
+$("#noteText").addEventListener("input", () => { if (!state.sheet) return; const v = $("#noteText").value; if (v.trim()) state.drafts[state.sheet.key] = v; else delete state.drafts[state.sheet.key]; saveDrafts(); });
+$("#noteCancel").onclick = () => closeNote(true); $("#dimmer").onclick = () => closeNote(false);
 $("#noteSend").onclick = async () => {
-  const text = $("#noteText").value.trim(); const it = state.noteFor; if (!text || !it) return;
-  try { await rpc("cedric_screen_tap", { p_loop: it.id, p_code: "note", p_label: "Note", p_note: text }); closeNote(); haptic("ok"); toast("Sent to Cedric. He'll answer in the chat."); load(); }
-  catch (e) { toast("Didn't send. Check your connection and try again."); }
+  const s = state.sheet; const text = $("#noteText").value.trim(); if (!text || !s) return;
+  const { it, entry, key } = s;
+  delete state.drafts[key]; saveDrafts(); closeNote(false);
+  if (entry) {   // Change: only works while it's still queued
+    const o = begin(it.id); o.edits[entry.action_id] = text; render("tasks");
+    try {
+      const r = await rpc("cedric_screen_change_note", { p_action_id: entry.action_id, p_note: text }); settle(o);
+      if (r && r.ok) { haptic("ok"); toast("Changed."); }
+      else { delete o.edits[entry.action_id]; state.drafts[it.id] = text; saveDrafts(); toast("Cedric already has it. Your change is kept as a new note to send."); }
+    } catch (e) { settle(o); delete o.edits[entry.action_id]; state.drafts[key] = text; saveDrafts(); toast("Didn't save. Check your connection and try again."); }
+    render("tasks"); loadTasks(); return;
+  }
+  queueAction(it, { code: "note", label: "Note", note: text }, () => { state.drafts[it.id] = text; saveDrafts(); });
 };
-async function tap(it, c) {
-  haptic();
-  try { await rpc("cedric_screen_tap", { p_loop: it.id, p_code: c.code, p_label: c.label }); it.queued = true; render(); haptic("ok"); toast(c.label + ": sent to Cedric."); }
-  catch (e) { toast("Didn't send. Check your connection and try again."); }
+
+// ---------- taps ----------
+async function queueAction(it, c, onFail) {
+  const o = begin(it.id);
+  const temp = { action_id: null, code: c.code, label: c.label, note: c.note || null, status: "queued", answer: null, created_at: new Date(nowMs()).toISOString(), _temp: true };
+  if (c.code !== "note") for (const e of (it.thread || [])) if (e.status === "queued" && e.code !== "note" && e.action_id) o.hide.add(e.action_id);   // a newer choice replaces an older one
+  o.add.push(temp); render("tasks"); haptic();
+  try {
+    const r = await act({ loop_id: it.id, code: c.code, label: c.label, note: c.note, revision: it.revision });
+    temp.action_id = r && r.action_id; temp.status = (r && r.status) || "queued"; settle(o); haptic("ok");
+  } catch (e) {
+    settle(o); o.add = o.add.filter(x => x !== temp); onFail && onFail();
+    toast(e.message === "not-allowed" ? "This only works from Cedric's chat. Close it and open it again." : "Didn't send. Check your connection and try again.");
+  }
+  render("tasks"); loadTasks();
 }
+async function tap(it, c) {
+  if (!INSTANT.has(c.code)) return queueAction(it, { code: c.code, label: c.label });
+  haptic();
+  const before = { status: it.status, bring_back_at: it.bring_back_at || null, held_since: it.held_since || null };
+  const o = begin(it.id); const label = choiceLabel(c);
+  if (c.code === "done") {
+    const v = view(); let group = "needs", index = 0;
+    for (const g of ["needs", "working", "wait"]) { const i = v[g].findIndex(x => x.id === it.id); if (i >= 0) { group = g; index = i; break; } }
+    o.patch = { ...o.patch, status: "closed" };
+    const gh = { item: it, group, index, before, timer: setTimeout(() => { state.undo.delete(it.id); render("tasks"); }, UNDO_MS) };
+    gh.call = act({ loop_id: it.id, code: "done", label, revision: it.revision });
+    state.undo.set(it.id, gh); render("tasks");
+    try { gh.result = await gh.call; settle(o); haptic("ok"); }
+    catch (e) { clearTimeout(gh.timer); state.undo.delete(it.id); drop(it.id); render("tasks"); toast("Didn't save. Check your connection and try again."); loadTasks(); }
+    return;
+  }
+  if (c.code === "later") { const at = state.tasks.later && state.tasks.later.at; o.patch = { ...o.patch, status: "held", bring_back_at: at || null, held_since: it.held_since || new Date(nowMs()).toISOString(), _backLabel: state.tasks.later && state.tasks.later.label }; }
+  if (c.code === "hold") o.patch = { ...o.patch, status: "held", bring_back_at: null, held_since: it.held_since || new Date(nowMs()).toISOString(), _backLabel: null };
+  if (c.code === "unhold") o.patch = { ...o.patch, status: "open", bring_back_at: null, held_since: null, _backLabel: null };
+  o.front = true; state.open.tasks.delete(it.id); render("tasks");
+  try {
+    await act({ loop_id: it.id, code: c.code, label, revision: it.revision }); settle(o); haptic("ok");
+    if (c.code === "later" && o.patch.bring_back_at) toast(backLine({ ...it, ...o.patch }) + ".");
+  } catch (e) { drop(it.id); render("tasks"); toast("Didn't save. Check your connection and try again."); }
+  loadTasks();
+}
+async function undoDone(id) {
+  const gh = state.undo.get(id); if (!gh) return;
+  clearTimeout(gh.timer); state.undo.delete(id); haptic();
+  const o = begin(id); o.patch = { ...o.patch, ...gh.before }; render("tasks");
+  let r;
+  try { r = gh.result || await gh.call; } catch (e) { settle(o); return; }   // Done never landed; tap() has already put the card back
+  try {
+    await act({ loop_id: id, code: "undo", label: "Undo", target: r.action_id }); settle(o); haptic("ok");
+  } catch (e) { settle(o); o.patch = { ...o.patch, status: "closed" }; render("tasks"); toast("Couldn't undo. It stays done; tap refresh to check."); }
+  loadTasks();
+}
+async function cancelAction(it, e) {
+  const o = begin(it.id); o.hide.add(e.action_id); render("tasks"); haptic();
+  try {
+    const r = await rpc("cedric_screen_cancel", { p_action_id: e.action_id }); settle(o);
+    if (!(r && r.ok)) { o.hide.delete(e.action_id); toast("Too late to cancel: Cedric already has it."); }
+  } catch (x) { settle(o); o.hide.delete(e.action_id); toast("Didn't cancel. Check your connection and try again."); }
+  render("tasks"); loadTasks();
+}
+function retry(it, e) { queueAction(it, { code: e.code, label: e.label, note: e.note }); }
 async function togglePin(m) {
-  m.pinned = !m.pinned; render();
-  try { await rpc("cedric_screen_pin", { p_id: m.id, p_pinned: m.pinned }); } catch (e) { m.pinned = !m.pinned; render(); toast("Couldn't change the pin."); }
+  m.pinned = !m.pinned; render("make");
+  try { await rpc("cedric_screen_pin", { p_id: m.id, p_pinned: m.pinned }); } catch (e) { m.pinned = !m.pinned; render("make"); toast("Couldn't change the pin."); }
 }
 
-function render() {
-  const main = $("#main"); main.replaceChildren();
+// ---------- rendering and loading ----------
+function render(which) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === state.tab));
-  if (state.error) { main.append(el("div", { class: "msg" }, state.error)); return; }
-  if (state.tab === "tasks") { if (state.tasks) renderTasks(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
-  else { if (state.make) renderMake(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
-}
-async function load(manual) {
-  if (!INIT) { state.error = "Open this from Cedric's chat in Telegram."; render(); return; }
-  try {
-    const [t, m] = await Promise.all([rpc("cedric_screen_tasks", {}), rpc("cedric_screen_make", {})]);
-    state.tasks = t; state.make = m; state.error = null; render(); if (manual) toast("Up to date.");
-  } catch (e) {
-    state.error = e.message === "not-allowed" ? "This only opens for Cedric's owner, from Cedric's chat. Close it and open it again from the chat." : "Couldn't reach Cedric's database. Pull down or tap refresh to try again.";
-    render();
+  for (const k of which ? [which] : PANES) {
+    const main = $("#" + k + "Main"), pane = main.parentNode, top = pane.scrollTop;
+    main.replaceChildren();
+    if (state.error) main.append(el("div", { class: "msg" }, state.error));
+    else if (k === "tasks") { if (state.tasks) renderTasks(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
+    else { if (state.make) renderMake(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
+    pane.scrollTop = top;
   }
 }
+function settleOver(t0) { for (const [id, o] of state.over) if (!o.inflight && o.resolvedAt && o.resolvedAt < t0) state.over.delete(id); }
+function takeTasks(t, t0) {
+  if (t && t.generated_at) state.skew = Date.now() - Date.parse(t.generated_at);
+  state.tasks = t; settleOver(t0);
+}
+let loadingTasks = false;
+async function loadTasks() {
+  if (!INIT || loadingTasks) return; loadingTasks = true; const t0 = ++state.clock;
+  try {
+    const t = await rpc("cedric_screen_tasks_v2", {}); takeTasks(t, t0); state.error = null;
+    const { generated_at, ...rest } = t || {}; const sig = JSON.stringify(rest) + "|" + state.over.size + "|" + state.undo.size + "|" + anyOffline(view());
+    if (sig !== state.sig) { state.sig = sig; render(); }
+  } catch (e) { if (!state.tasks) { state.error = errText(e); render(); } }
+  finally { loadingTasks = false; }
+}
+function errText(e) { return e.message === "not-allowed" ? "This only opens for Cedric's owner, from Cedric's chat. Close it and open it again from the chat." : "Couldn't reach Cedric's database. Tap refresh to try again."; }
+async function load(manual) {
+  if (!INIT) { state.error = "Open this from Cedric's chat in Telegram."; render(); return; }
+  const t0 = ++state.clock;
+  try {
+    const [t, m] = await Promise.all([rpc("cedric_screen_tasks_v2", {}), rpc("cedric_screen_make", {})]);
+    takeTasks(t, t0); state.make = m; state.error = null; state.sig = ""; render(); if (manual) toast("Up to date.");
+  } catch (e) { state.error = errText(e); render(); }
+}
+// Poll every 10 s while something is waiting on Cedric and the page is visible (also re-checks the 90 s offline rule).
+setInterval(() => { if (!document.hidden && anyPending()) loadTasks(); }, POLL_MS);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+
+// ---------- swiping between Tasks and Make ----------
+// Native horizontal scroll-snap does the swipe; tabs follow the pane. A swipe never taps anything.
+// Touches that start within 24 px of either edge never move the panes sideways (Android uses the edges for Back).
+const panes = $("#panes");
+function showPane(k, smooth) {
+  const i = PANES.indexOf(k); if (i < 0) return;
+  panes.scrollTo({ left: i * panes.clientWidth, behavior: smooth ? "smooth" : "auto" });
+  setTab(k);
+}
+function setTab(k) {
+  if (state.tab === k) return; state.tab = k; localStorage.setItem("cedric.tab", k);
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === k));
+}
+panes.addEventListener("scroll", () => { const i = Math.round(panes.scrollLeft / Math.max(1, panes.clientWidth)); setTab(PANES[Math.min(PANES.length - 1, Math.max(0, i))]); }, { passive: true });
+window.addEventListener("resize", () => { panes.scrollLeft = PANES.indexOf(state.tab) * panes.clientWidth; });
+let edgeTouch = null;
+panes.addEventListener("touchstart", e => {
+  const t = e.touches[0], w = window.innerWidth;
+  edgeTouch = e.touches.length === 1 && (t.clientX < EDGE_PX || t.clientX > w - EDGE_PX) ? { x: t.clientX, y: t.clientY, axis: null } : null;
+}, { passive: true });
+panes.addEventListener("touchmove", e => {
+  if (!edgeTouch) return; const t = e.touches[0], dx = Math.abs(t.clientX - edgeTouch.x), dy = Math.abs(t.clientY - edgeTouch.y);
+  if (!edgeTouch.axis && (dx > 4 || dy > 4)) edgeTouch.axis = dx > dy ? "x" : "y";
+  if (edgeTouch.axis === "x" && e.cancelable) e.preventDefault();   // sideways from the edge: ignored. Up/down from the edge: scrolls as usual.
+}, { passive: false });
+panes.addEventListener("touchend", () => { edgeTouch = null; }, { passive: true });
+panes.addEventListener("touchcancel", () => { edgeTouch = null; }, { passive: true });
+
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   const k = t.dataset.tab; haptic();
   if (k === "chat") { tg ? tg.close() : null; return; }
-  state.tab = k; localStorage.setItem("cedric.tab", k); closeReader(); render(); window.scrollTo(0, 0);
+  closeReader(); showPane(k, true);
 }));
-document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
 if (tg) {
   tg.ready(); tg.expand();
+  try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
   const applyTheme = () => document.documentElement.classList.toggle("dark", tg.colorScheme === "dark");
   applyTheme(); tg.onEvent("themeChanged", applyTheme);
   try { tg.setHeaderColor("bg_color"); } catch (e) {}
-  tg.BackButton && tg.BackButton.onClick(closeReader);
+  tg.BackButton && tg.BackButton.onClick(() => { state.sheet ? closeNote(false) : closeReader(); });
 }
-render(); load();
+render(); showPane(state.tab, false); load();
 </script>
 </body>
 </html>
