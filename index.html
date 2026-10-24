@@ -6,6 +6,10 @@ launch data (only Lamont, only from Cedric's bot, under 24 hours old). Published
 All text from mail and documents is inserted as text, never as HTML (the reader's markdown is escaped first by md()).
 v2: instant Done/Later/Hold/Bring back (optimistic, Undo for Done), queued actions show their state and Cedric's answer
 on the card, offline note, Tasks/Make swipe panes.
+v2.1 (after the first phone test): a tapped card shows what happened for ~1 s, then folds away (bottom bar "Done: … · Undo");
+every card shows where it stands (stripe + chip: With Cedric / New reply / Seen / offline); cards Cedric holds move to a
+compact "With Cedric" group; replies come back to the top with a "Cedric answered N · Show" banner; a used choice is never
+offered again.
 -->
 <html lang="en">
 <head>
@@ -17,10 +21,12 @@ on the card, offline note, Tasks/Make swipe panes.
   :root{
     --page:#F5F6F3; --card:#FFFFFF; --line:#E1E3DE; --ink:#16212C; --soft:#55606C; --faint:#8A939C;
     --navy:#1E3550; --navy-tint:#E8EDF3; --on-navy:#FFFFFF; --brass:#A9874F; --inset:#F1F3F0; --dim:rgba(14,22,30,.45); --bar:#FBFBF9; --warn:#85652E;
+    --with:#A3ABB3; --reply:#2A66AC; --reply-tint:#E3EDF9; --on-reply:#FFFFFF; --done:#2C7A4B; --done-tint:#DDF0E3; --calm:#4A6077; --calm-tint:#E8EEF4;
   }
   :root.dark{
     --page:#0F151C; --card:#18212B; --line:#26313D; --ink:#E9ECEF; --soft:#9AA6B2; --faint:#6F7B87;
     --navy:#B9CBE0; --navy-tint:#22303F; --on-navy:#0F151C; --brass:#8E7546; --inset:#121A23; --dim:rgba(0,0,0,.55); --bar:#141C25; --warn:#C9A86E;
+    --with:#5A6774; --reply:#7EB2EA; --reply-tint:#1B2D41; --on-reply:#0F151C; --done:#74C594; --done-tint:#15301F; --calm:#A5B8CC; --calm-tint:#1F2B38;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overflow:hidden;background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
@@ -48,9 +54,29 @@ on the card, offline note, Tasks/Make swipe panes.
   h1 .q{color:var(--soft);font-weight:500}
   .glabel{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin:18px 0 10px}
   .mark{width:11px;height:11px;border-radius:50%;flex:none}
-  .m-need{background:var(--navy)} .m-work{border:2px solid var(--navy);background:linear-gradient(90deg,var(--navy) 50%,transparent 50%)} .m-wait{border:2px solid var(--faint)}
+  .m-need{background:var(--navy)} .m-work{border:2px solid var(--navy);background:linear-gradient(90deg,var(--navy) 50%,transparent 50%)} .m-wait{border:2px solid var(--faint)} .m-with{background:var(--with)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px 16px 12px;margin-bottom:8px}
   .thead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .th-r{flex:none;display:flex;align-items:center;gap:6px}
+  /* Where a card stands, at a glance: a 4 px left stripe plus a chip in the top row. */
+  .st-with{box-shadow:inset 4px 0 0 var(--with)} .st-new{box-shadow:inset 4px 0 0 var(--reply)} .st-off{box-shadow:inset 4px 0 0 var(--warn)}
+  .chip{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;line-height:1.2;font-weight:700;border-radius:999px;padding:4px 9px;white-space:nowrap;margin-top:1px}
+  .chip i{display:block;width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+  .chip.with{background:var(--inset);color:var(--soft);border:1px solid var(--line)}
+  .chip.with.on i{animation:pulse 1.4s ease-in-out infinite}
+  .chip.with.off{color:var(--warn);border-color:var(--warn);background:transparent}
+  .chip.new{background:var(--reply);color:var(--on-reply)}
+  .chip.seen{color:var(--faint);font-weight:600;padding:4px 2px}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.6)}}
+  /* A card leaving after a tap: tinted with what happened for about a second, then it folds away. */
+  .card.exit{position:relative;pointer-events:none;overflow:hidden}
+  .card.exit > :not(.x-badge){opacity:.14} .card.exit > .thead{opacity:.5}
+  .card.x-done{background:var(--done-tint);border-color:var(--done);box-shadow:inset 0 0 0 1px var(--done)}
+  .card.x-calm{background:var(--calm-tint);border-color:var(--calm);box-shadow:inset 0 0 0 1px var(--calm)}
+  .x-badge{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:9px;font-size:20px;font-weight:700;letter-spacing:-.005em}
+  .x-badge svg{width:24px;height:24px}
+  .x-done .x-badge{color:var(--done)} .x-calm .x-badge{color:var(--calm)}
+  .nextline{font-size:14.5px;color:var(--soft);margin-top:10px}
   .t-title{font-size:18px;line-height:1.3;font-weight:600;min-width:0;overflow-wrap:anywhere}
   .chev{flex:none;margin-top:3px;color:var(--faint);transition:transform .15s}
   .open .chev{transform:rotate(180deg);color:var(--navy)}
@@ -79,15 +105,14 @@ on the card, offline note, Tasks/Make swipe panes.
   .th-st.fail .s{color:var(--ink)}
   .th-btn{font-size:14.5px;font-weight:600;color:var(--navy);padding:6px 0}
   .th-gap{height:4px}
-  .ghost{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px}
-  .ghost .g-t{flex:1;min-width:0;font-size:16px;color:var(--faint);text-decoration:line-through;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ghost .g-a{flex:none;display:flex;align-items:center;gap:7px;font-size:16px;font-weight:600;color:var(--soft)}
-  .ghost .g-a button{color:var(--navy);font-weight:700;padding:8px 2px}
-  .list{background:var(--card);border:1px solid var(--line);border-radius:18px}
+    .list{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
   .row{padding:11px 16px;border-top:1px solid var(--line)} .row:first-child{border-top:0}
   .row .t-title{font-size:17px} .row .t-detail{font-size:15px;margin-top:3px}
   .row .actions{margin-top:2px;justify-content:flex-start}
   .back-at{color:var(--ink);font-weight:600}
+  .wc:not(.open) .t-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .wline{font-size:14.5px;line-height:1.35;color:var(--soft);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wline.offline{color:var(--warn);font-weight:600;white-space:normal}
   .empty{font-size:17px;color:var(--soft);padding:24px 2px}
   .mk{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:8px}
   .mk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -117,6 +142,17 @@ on the card, offline note, Tasks/Make swipe panes.
   .md{font-size:17px;line-height:1.55} .md h3,.md h4{font-size:18px;margin:16px 0 6px} .md p{margin:8px 0} .md ul,.md ol{margin:8px 0 8px 22px}
   .md table{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0} .md td,.md th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--ink);color:var(--page);padding:10px 16px;border-radius:12px;font-size:15px;z-index:8;display:none;max-width:90%}
+  .has-bar .toast{bottom:calc(142px + env(safe-area-inset-bottom))}
+  /* Bottom bar after a tap ("Done: … · Undo") or when Cedric closed something ("Handled: …"). */
+  .bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));width:max-content;max-width:min(464px,calc(100% - 24px));min-height:48px;background:var(--ink);color:var(--page);border-radius:14px;padding:4px 6px 4px 16px;display:none;align-items:center;gap:8px;z-index:4;font-size:15.5px;box-shadow:0 6px 20px rgba(10,20,30,.22)}
+  .bar .b-t{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:9px 0}
+  .bar:not(.has-undo){padding-right:16px}
+  .bar .b-dot{flex:none;opacity:.6}
+  .bar button{flex:none;font-weight:700;color:var(--reply-tint);padding:10px 12px}
+  /* Top banner when replies came back: "Cedric answered 2 · Show". */
+  .banner{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:4;background:var(--reply);color:var(--on-reply);border-radius:999px;padding:5px 5px 5px 16px;display:none;align-items:center;gap:10px;font-size:15.5px;font-weight:600;white-space:nowrap;box-shadow:0 6px 18px rgba(10,20,30,.25)}
+  .banner button{color:inherit;font-weight:700;border:1.5px solid currentColor;border-radius:999px;padding:6px 14px}
+  @media (prefers-reduced-motion: reduce){ .chip.with.on i{animation:none} }
   .msg{font-size:17px;color:var(--soft);padding:40px 4px;line-height:1.5}
 </style>
 </head>
@@ -143,6 +179,8 @@ on the card, offline note, Tasks/Make swipe panes.
 </div>
 <div class="reader" id="reader"></div>
 <div class="toast" id="toast"></div>
+<div class="bar" id="bar" role="status"><span class="b-t" id="barText"></span><span class="b-dot" id="barDot">·</span><button id="barUndo">Undo</button></div>
+<div class="banner" id="banner" role="status"><span id="bannerText"></span><button id="bannerShow">Show</button></div>
 
 <script>
 "use strict";
@@ -153,16 +191,27 @@ const PANES = ["tasks", "make"];
 const INSTANT = new Set(["done", "later", "hold", "unhold"]);
 const NY = "America/New_York";
 const OFFLINE_MS = 90e3, UNDO_MS = 5000, POLL_MS = 10e3, EDGE_PX = 24;
+const HOLD_MS = 1000, FOLD_MS = 400, ARRIVE_MS = 380, SEEN_MS = 1500, HANDLED_MS = 4000;   // tinted card, fold away, fold in, "seen" dwell
+const REDUCED = () => !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+const foldMs = () => REDUCED() ? 0 : FOLD_MS;
 const state = {
   tab: PANES.includes(localStorage.getItem("cedric.tab")) ? localStorage.getItem("cedric.tab") : "tasks",
   tasks: null, make: null, error: null, skew: 0, sig: "",
   open: { tasks: new Set(), make: new Set() },
   detail: { tasks: localStorage.getItem("cedric.detail.tasks") === "1", make: localStorage.getItem("cedric.detail.make") === "1" },
   over: new Map(),   // loop id -> optimistic changes laid over the last server read, until the server has caught up
-  undo: new Map(),   // loop id -> "Done · Undo" ghost for 5 s
-  clock: 0, sheet: null, drafts: {}
+  undo: new Map(),   // loop id -> the Done call, for Undo on the bottom bar
+  exits: new Map(),  // loop id -> a card leaving Needs you: shown tinted where it was, then folded away
+  arrive: new Map(), // loop id -> when it landed in its new place (it folds in)
+  seenNow: new Set(),// reply action ids seen during this visit (those cards keep their place at the top)
+  unseen: 0, clock: 0, sheet: null, drafts: {}
 };
 try { state.drafts = JSON.parse(sessionStorage.getItem("cedric.drafts") || "{}") || {}; } catch (e) { state.drafts = {}; }
+// Cedric's replies the owner has looked at, per action id (kept on this phone).
+const SEEN_KEY = "cedric.seen";
+const seenFirstRun = localStorage.getItem(SEEN_KEY) == null;
+let seenIds; try { seenIds = new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "[]")); } catch (e) { seenIds = new Set(); }
+function saveSeen() { try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seenIds].slice(-400))); } catch (e) {} }
 const SOURCE = { gmail: "Gmail", calendar: "Calendar", ticktick: "TickTick", tiller: "Bank", bank: "Bank", chat: "Chat", campaign: "Plan", health: "Health", cedric: "Cedric" };
 const $ = (s, r) => (r || document).querySelector(s);
 
@@ -263,24 +312,56 @@ function applyOver(it) {
   x.pending = live.length ? live[live.length - 1] : p;
   return x;
 }
+// Groups on screen: needs (Needs you: nothing sent), with (needs items Cedric holds), working, wait.
 function view() {
-  const d = state.tasks, out = { needs: [], working: [], wait: [] }, moved = [];
+  const d = state.tasks, out = { needs: [], with: [], working: [], wait: [] }, moved = [];
   for (const g of ["needs", "working", "wait"]) for (const it of (d[g] || [])) {
+    if (state.exits.has(it.id)) continue;   // on its way out: shown tinted in its old place below, lands in the new one after
     const o = state.over.get(it.id); const x = applyOver(it);
     if (x.status === "closed" || x.status === "done") continue;
     const ng = o && "status" in o.patch ? groupOf(x) : g;   // only a tapped Done/Later/Hold/Bring back moves a card
     if (ng === g && !(o && o.front)) out[g].push(x); else moved.push([ng, x]);
   }
   for (const [g, x] of moved) out[g].unshift(x);
-  for (const [id, gh] of state.undo) {
-    if (out.needs.some(x => x.id === id) || out.working.some(x => x.id === id) || out.wait.some(x => x.id === id)) continue;
-    const arr = out[gh.group]; arr.splice(Math.min(gh.index, arr.length), 0, { ...gh.item, _ghost: gh });
-  }
+  out.with = out.needs.filter(x => x.pending); out.needs = out.needs.filter(x => !x.pending);
+  // Replies come back to the top (newest first). One that was seen during this visit keeps its place until the next visit.
+  const top = out.needs.filter(replyTop).sort((a, b) => replyAt(b) - replyAt(a));
+  out.needs = top.concat(out.needs.filter(x => !replyTop(x)));
+  for (const [, ex] of state.exits) out.needs.splice(Math.min(ex.index, out.needs.length), 0, { ...ex.item, _exit: ex });
   return out;
+}
+const lastOf = a => a && a.length ? a[a.length - 1] : null;
+const answered = e => !!e && (e.status === "done" || e.status === "asked" || e.status === "failed") && !!e.answer;
+const newestReply = x => { const e = lastOf(x.thread); return answered(e) && !x.pending ? e : null; };
+const isUnseen = x => { const e = newestReply(x); return !!e && !!e.action_id && !seenIds.has(e.action_id); };
+const replyTop = x => { const e = newestReply(x); return !!e && (!seenIds.has(e.action_id) || state.seenNow.has(e.action_id)); };
+const replyAt = x => Date.parse((newestReply(x) || {}).updated_at || (newestReply(x) || {}).created_at || 0) || 0;
+const liveEntry = e => e && (e.status === "queued" || e.status === "claimed");
+// One state per card: off (waiting, Cedric's computer offline) / claimed / queued (With Cedric) / new (New reply) / seen / null.
+function itemState(x) {
+  if (x.pending || (x.thread || []).some(liveEntry)) {
+    if ((x.thread || []).some(waitingOffline) || waitingOffline(x.pending)) return "off";
+    return x.pending && x.pending.status === "claimed" ? "claimed" : "queued";
+  }
+  const e = newestReply(x); if (e) return seenIds.has(e.action_id) ? "seen" : "new";
+  return null;
+}
+const STRIPE = { off: " st-off", claimed: " st-with", queued: " st-with", new: " st-new" };
+function chipFor(s) {
+  if (!s) return null;
+  if (s === "new") return el("span", { class: "chip new" }, "New reply");
+  if (s === "seen") return el("span", { class: "chip seen" }, "Seen");
+  return el("span", { class: "chip with" + (s === "claimed" ? " on" : "") + (s === "off" ? " off" : ""), title: s === "claimed" ? "Cedric is on it" : "Waiting for Cedric" }, el("i"), "With Cedric");
+}
+function marks(node, it, s) {   // hooks for the seen watcher, the fold-in and keeping his place
+  node.dataset.id = it.id;
+  const e = newestReply(it); if (s === "new" && e) node.dataset.unseen = e.action_id;
+  if (state.arrive.has(it.id)) node.dataset.arrive = it.id;
+  return node;
 }
 const bridgeStale = () => { const b = state.tasks && state.tasks.bridge_seen_at; return !b || nowMs() - Date.parse(b) > OFFLINE_MS; };
 const waitingOffline = e => e && e.status === "queued" && nowMs() - Date.parse(e.created_at || nowMs()) > OFFLINE_MS && bridgeStale();
-function anyOffline(v) { return ["needs", "working", "wait"].some(g => v[g].some(x => !x._ghost && ((x.thread || []).some(waitingOffline) || waitingOffline(x.pending)))); }
+function anyOffline(v) { return ["needs", "with", "working", "wait"].some(g => v[g].some(x => !x._exit && ((x.thread || []).some(waitingOffline) || waitingOffline(x.pending)))); }
 function anyPending() {
   if (!state.tasks) return false;
   for (const g of ["needs", "working", "wait"]) for (const it of (state.tasks[g] || [])) if (it.pending) return true;
@@ -346,60 +427,91 @@ function noteButton(it) { return el("button", { class: "note", onclick: () => op
 function toggleOpen(it) { const s = state.open.tasks; s.has(it.id) ? s.delete(it.id) : s.add(it.id); render("tasks"); }
 function choiceLabel(c) { return c.code === "later" && (!c.label || /^later$/i.test(c.label)) ? laterLabel() : c.label; }
 
-function ghostCard(it) {
-  return el("div", { class: "card ghost" }, el("div", { class: "g-t" }, it.title),
-    el("div", { class: "g-a" }, svg(ICON.check), "Done", el("span", {}, "·"), el("button", { onclick: () => undoDone(it.id) }, "Undo")));
+function headRow(it, s) {
+  return el("div", { class: "thead", onclick: () => toggleOpen(it) }, el("div", { class: "t-title" }, it.title), el("div", { class: "th-r" }, chipFor(s), svg(ICON.chev)));
+}
+const DEFAULT_CHOICES = [{ code: "later", label: "Later" }, { code: "done", label: "Done", primary: true }];
+// A choice already sent (in the thread, any status but cancelled/superseded, which the thread leaves out) is never offered again.
+function choicesFor(it) {
+  const given = Array.isArray(it.choices) && it.choices.length ? it.choices : null;
+  if (!given) return { list: DEFAULT_CHOICES, primary: DEFAULT_CHOICES[1] };
+  const used = new Set((it.thread || []).filter(e => e.code && e.code !== "note" && e.status !== "cancelled" && e.status !== "superseded").map(e => e.code));
+  const list = given.filter(c => !used.has(c.code));
+  const designated = given.find(c => c.primary) || given[given.length - 1];
+  return { list, primary: list.includes(designated) ? designated : null };   // if the main one was used, what's left stays quiet
 }
 function taskCard(it) {
-  if (it._ghost) return ghostCard(it);
+  const ex = it._exit, s = ex ? null : itemState(it);
   const open = state.detail.tasks || state.open.tasks.has(it.id);
-  const choices = Array.isArray(it.choices) && it.choices.length ? it.choices : [{ code: "later", label: "Later" }, { code: "done", label: "Done", primary: true }];
-  const primary = choices.find(c => c.primary) || choices[choices.length - 1];
-  const others = choices.filter(c => c !== primary);
+  const { list, primary } = choicesFor(it);
+  const others = list.filter(c => c !== primary);
   const needsReview = it.preview && it.preview.draft && !open;
-  const card = el("div", { class: "card" + (open ? " open" : "") });
-  const head = el("div", { class: "thead", onclick: () => toggleOpen(it) }, el("div", { class: "t-title" }, it.title), svg(ICON.chev));
-  card.append(head, el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, it.detail || (it.due ? "Due " + when(it.due) : ""))));
+  const card = el("div", { class: "card" + (open ? " open" : "") + (STRIPE[s] || "") });
+  card.append(headRow(it, s), el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, it.detail || (it.due ? "Due " + when(it.due) : ""))));
   if (open) { const m = moreBox(it.preview, it.source_link); if (m) card.append(m); }
   const th = threadBox(it, open); if (th) card.append(th);
-  // While Cedric holds a chosen action (not just a note), the buttons wait; Cancel is on the thread line.
-  if (!(it.pending && it.pending.code !== "note")) {
-    card.append(el("div", { class: "actions" },
+  // While Cedric holds anything for this item, its choices wait (Change/Cancel sit on the thread line).
+  if (!it.pending) {
+    if (list.length) card.append(el("div", { class: "actions" },
       el("div", { class: "others" }, ...others.map(c => el("button", { class: "quiet", onclick: () => tap(it, c) }, choiceLabel(c)))),
-      el("button", { class: "go", onclick: () => needsReview ? (state.open.tasks.add(it.id), render("tasks")) : tap(it, primary) }, needsReview ? "Review" : choiceLabel(primary))));
+      primary ? el("button", { class: "go", onclick: () => needsReview ? (state.open.tasks.add(it.id), render("tasks")) : tap(it, primary) }, needsReview ? "Review" : choiceLabel(primary)) : null));
+    else card.append(el("div", { class: "nextline" }, "Waiting on your next step? Add a note."));
   }
   card.append(noteButton(it));
-  return card;
+  if (ex) {
+    card.classList.add("exit", ex.kind === "done" ? "x-done" : "x-calm"); 
+    card.dataset.exit = it.id;
+    card.append(el("div", { class: "x-badge" }, ex.kind === "done" ? svg(ICON.check) : null, ex.word));
+    return card;
+  }
+  return marks(card, it, s);
 }
 function rowItem(it, kind) {
-  if (it._ghost) return el("div", { class: "row" }, ghostCard(it));
-  const open = state.detail.tasks || state.open.tasks.has(it.id);
+  const open = state.detail.tasks || state.open.tasks.has(it.id), s = itemState(it);
   let sub = it.detail || "";
   if (kind === "wait") {
     const back = backLine(it);
     sub = [back ? el("span", { class: "back-at" }, back + ". ") : (it.held_since ? "Held since " + when(it.held_since) + ". " : "Held. "), it.detail || ""];
   }
-  const row = el("div", { class: "row" + (open ? " open" : "") },
-    el("div", { class: "thead", onclick: () => toggleOpen(it) }, el("div", { class: "t-title" }, it.title), svg(ICON.chev)),
+  const row = el("div", { class: "row" + (open ? " open" : "") + (STRIPE[s] || "") },
+    headRow(it, s),
     el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, sub)));
   if (open) { const m = moreBox(it.preview, it.source_link); if (m) row.append(m); }
   const th = threadBox(it, open); if (th) row.append(th);
   if (kind === "wait" && open) row.append(el("div", { class: "actions" }, el("button", { class: "quiet", onclick: () => tap(it, { code: "unhold", label: "Bring it back now" }) }, "Bring it back now"), noteButton(it)));
   else if (open || th) row.append(noteButton(it));
-  return row;
+  return marks(row, it, s);
+}
+// With Cedric: title, chip and one line; tap to open the whole card (thread, Change/Cancel, Add a note).
+function withRow(it) {
+  const open = state.detail.tasks || state.open.tasks.has(it.id), s = itemState(it), p = it.pending;
+  const row = el("div", { class: "row wc" + (open ? " open" : "") + (STRIPE[s] || "") }, headRow(it, s));
+  if (!open) {
+    const what = p ? (p.code === "note" ? "“" + (p.note || "") + "”" : (p.label || p.code)) : "";
+    row.append(s === "off" ? el("div", { class: "wline offline", onclick: () => toggleOpen(it) }, "Saved. Cedric's computer is offline; this will wait.")
+                           : el("div", { class: "wline", onclick: () => toggleOpen(it) }, (s === "claimed" ? "Cedric is on it: " : "Waiting for Cedric: ") + what));
+    return marks(row, it, s);
+  }
+  row.append(el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, it.detail || (it.due ? "Due " + when(it.due) : ""))));
+  const m = moreBox(it.preview, it.source_link); if (m) row.append(m);
+  const th = threadBox(it, true); if (th) row.append(th);
+  row.append(noteButton(it));
+  return marks(row, it, s);
 }
 
 function renderTasks(main) {
-  const v = view(); const real = a => a.filter(x => !x._ghost).length;
-  const n = real(v.needs), w = real(v.working), h = real(v.wait);
+  const v = view(); const real = a => a.filter(x => !x._exit).length;
+  const n = real(v.needs), c = v.with.length, w = v.working.length, h = v.wait.length;
   const now = new Date(nowMs()); const part = now.getHours() < 12 ? "morning" : now.getHours() < 17 ? "afternoon" : "evening";
   main.append(header(now.toLocaleDateString([], { weekday: "long" }) + " " + part, "tasks", anyOffline(v)));
-  const rest = [w ? plural(w, "thing", "things").replace(/thing(s?)$/, "I'm working on") : "", h ? h + " can wait" : ""].filter(Boolean).join(", ");
+  const rest = [c ? c + " with Cedric" : "", w ? plural(w, "thing", "things").replace(/thing(s?)$/, "I'm working on") : "", h ? h + " can wait" : ""].filter(Boolean).join(", ");
   main.append(n ? el("h1", {}, plural(n, "thing needs you.", "things need you.") + " ", el("span", { class: "q" }, rest ? rest.charAt(0).toUpperCase() + rest.slice(1) + "." : ""))
                 : el("h1", {}, "Nothing needs you. ", el("span", { class: "q" }, rest ? rest.charAt(0).toUpperCase() + rest.slice(1) + "." : "")));
   if (v.needs.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-need" }), "Needs you")); v.needs.forEach(it => main.append(taskCard(it))); }
+  if (v.with.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-with" }), "With Cedric (" + v.with.length + ")"), el("div", { class: "list" }, v.with.map(withRow))); }
   if (v.working.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-work" }), "Working on it"), el("div", { class: "list" }, v.working.map(it => rowItem(it, "work")))); }
   if (v.wait.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-wait" }), "Can wait"), el("div", { class: "list" }, v.wait.map(it => rowItem(it, "wait")))); }
+  state.unseen = ["needs", "with", "working", "wait"].reduce((k, g) => k + v[g].filter(x => !x._exit && isUnseen(x)).length, 0);
 }
 
 function makeCard(m) {
@@ -488,6 +600,7 @@ $("#noteSend").onclick = async () => {
 
 // ---------- taps ----------
 async function queueAction(it, c, onFail) {
+  const ex = startExit(it, "sent", "Sent to Cedric");   // from Needs you it folds out and lands in With Cedric
   const o = begin(it.id);
   const temp = { action_id: null, code: c.code, label: c.label, note: c.note || null, status: "queued", answer: null, created_at: new Date(nowMs()).toISOString(), _temp: true };
   if (c.code !== "note") for (const e of (it.thread || [])) if (e.status === "queued" && e.code !== "note" && e.action_id) o.hide.add(e.action_id);   // a newer choice replaces an older one
@@ -496,7 +609,7 @@ async function queueAction(it, c, onFail) {
     const r = await act({ loop_id: it.id, code: c.code, label: c.label, note: c.note, revision: it.revision });
     temp.action_id = r && r.action_id; temp.status = (r && r.status) || "queued"; settle(o); haptic("ok");
   } catch (e) {
-    settle(o); o.add = o.add.filter(x => x !== temp); onFail && onFail();
+    settle(o); o.add = o.add.filter(x => x !== temp); onFail && onFail(); if (ex) { state.exits.delete(it.id); state.arrive.delete(it.id); }
     toast(e.message === "not-allowed" ? "This only works from Cedric's chat. Close it and open it again." : "Didn't send. Check your connection and try again.");
   }
   render("tasks"); loadTasks();
@@ -505,31 +618,40 @@ async function tap(it, c) {
   if (!INSTANT.has(c.code)) return queueAction(it, { code: c.code, label: c.label });
   haptic();
   const before = { status: it.status, bring_back_at: it.bring_back_at || null, held_since: it.held_since || null };
-  const o = begin(it.id); const label = choiceLabel(c);
+  const label = choiceLabel(c);
   if (c.code === "done") {
-    const v = view(); let group = "needs", index = 0;
-    for (const g of ["needs", "working", "wait"]) { const i = v[g].findIndex(x => x.id === it.id); if (i >= 0) { group = g; index = i; break; } }
-    o.patch = { ...o.patch, status: "closed" };
-    const gh = { item: it, group, index, before, timer: setTimeout(() => { state.undo.delete(it.id); render("tasks"); }, UNDO_MS) };
+    startExit(it, "done", "Done");
+    const o = begin(it.id); o.patch = { ...o.patch, status: "closed" };
+    const ms = HOLD_MS + foldMs() + UNDO_MS;   // Undo stays on the bar for 5 s after the card has gone
+    const gh = { item: it, before, timer: setTimeout(() => { state.undo.delete(it.id); hideBar(it.id); }, ms) };
     gh.call = act({ loop_id: it.id, code: "done", label, revision: it.revision });
-    state.undo.set(it.id, gh); render("tasks");
+    state.undo.set(it.id, gh); showBar("Done: " + shortTitle(it.title), ms, it.id); render("tasks");
     try { gh.result = await gh.call; settle(o); haptic("ok"); }
-    catch (e) { clearTimeout(gh.timer); state.undo.delete(it.id); drop(it.id); render("tasks"); toast("Didn't save. Check your connection and try again."); loadTasks(); }
+    catch (e) { clearTimeout(gh.timer); state.undo.delete(it.id); state.exits.delete(it.id); hideBar(it.id); drop(it.id); render("tasks"); toast("Didn't save. Check your connection and try again."); loadTasks(); }
     return;
   }
-  if (c.code === "later") { const at = state.tasks.later && state.tasks.later.at; o.patch = { ...o.patch, status: "held", bring_back_at: at || null, held_since: it.held_since || new Date(nowMs()).toISOString(), _backLabel: state.tasks.later && state.tasks.later.label }; }
+  const lt = state.tasks.later || {};
+  if (c.code === "later") startExit(it, "later", "Back " + (lt.label || "later"));
+  if (c.code === "hold") startExit(it, "hold", "Held");
+  const o = begin(it.id);
+  if (c.code === "later") o.patch = { ...o.patch, status: "held", bring_back_at: lt.at || null, held_since: it.held_since || new Date(nowMs()).toISOString(), _backLabel: lt.label };
   if (c.code === "hold") o.patch = { ...o.patch, status: "held", bring_back_at: null, held_since: it.held_since || new Date(nowMs()).toISOString(), _backLabel: null };
   if (c.code === "unhold") o.patch = { ...o.patch, status: "open", bring_back_at: null, held_since: null, _backLabel: null };
-  o.front = true; state.open.tasks.delete(it.id); render("tasks");
+  o.front = true; state.open.tasks.delete(it.id);
+  const barMs = HOLD_MS + foldMs() + 4000;
+  if (c.code === "later") showBar((backLine({ ...it, ...o.patch }) || "Back later") + ": " + shortTitle(it.title), barMs);
+  if (c.code === "hold") showBar("Held: " + shortTitle(it.title), barMs);
+  if (c.code === "unhold") state.arrive.set(it.id, Date.now());
+  render("tasks");
   try {
     await act({ loop_id: it.id, code: c.code, label, revision: it.revision }); settle(o); haptic("ok");
-    if (c.code === "later" && o.patch.bring_back_at) toast(backLine({ ...it, ...o.patch }) + ".");
-  } catch (e) { drop(it.id); render("tasks"); toast("Didn't save. Check your connection and try again."); }
+  } catch (e) { state.exits.delete(it.id); state.arrive.delete(it.id); hideBar(); drop(it.id); render("tasks"); toast("Didn't save. Check your connection and try again."); }
   loadTasks();
 }
 async function undoDone(id) {
   const gh = state.undo.get(id); if (!gh) return;
-  clearTimeout(gh.timer); state.undo.delete(id); haptic();
+  clearTimeout(gh.timer); state.undo.delete(id); hideBar(id); haptic();
+  state.exits.delete(id); state.arrive.set(id, Date.now());   // it folds back in where it was
   const o = begin(id); o.patch = { ...o.patch, ...gh.before }; render("tasks");
   let r;
   try { r = gh.result || await gh.call; } catch (e) { settle(o); return; }   // Done never landed; tap() has already put the card back
@@ -552,29 +674,193 @@ async function togglePin(m) {
   try { await rpc("cedric_screen_pin", { p_id: m.id, p_pinned: m.pinned }); } catch (e) { m.pinned = !m.pinned; render("make"); toast("Couldn't change the pin."); }
 }
 
+// ---------- a card leaving, the bottom bar, the reply banner ----------
+// A card tapped in Needs you stays where it was, tinted with what happened, for HOLD_MS; then it folds away (FOLD_MS)
+// and lands in its new group, folding in there. Phases come from the clock, so a re-render mid-way picks up where it was.
+function startExit(it, kind, word) {
+  const v = view(), i = v.needs.findIndex(x => x.id === it.id && !x._exit);
+  if (i < 0) return null;
+  const ex = { kind, word, item: v.needs[i], index: i, t0: Date.now(), phase: 0 };
+  state.exits.set(it.id, ex); state.open.tasks.delete(it.id); setTimeout(tick, 0);
+  return ex;
+}
+function tick() {
+  clearTimeout(tick.h); const now = Date.now(); let next = Infinity, changed = false;
+  for (const [id, ex] of state.exits) {
+    const t = now - ex.t0, end = HOLD_MS + foldMs(), phase = t >= end ? 2 : t >= HOLD_MS ? 1 : 0;
+    if (phase !== ex.phase) { ex.phase = phase; changed = true; }
+    if (phase === 2) { state.exits.delete(id); if (ex.kind !== "done") state.arrive.set(id, now); }
+    else next = Math.min(next, ex.t0 + (phase === 0 ? HOLD_MS : end));
+  }
+  if (changed) render("tasks");
+  if (next < Infinity) tick.h = setTimeout(tick, Math.max(30, next - now));
+}
+function fold(node, at, out) {   // height + opacity, from the clock position `at`
+  const cs = getComputedStyle(node), h = node.offsetHeight;
+  const full = { height: h + "px", opacity: 1, marginBottom: cs.marginBottom, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, borderTopWidth: cs.borderTopWidth, borderBottomWidth: cs.borderBottomWidth };
+  const none = { height: "0px", opacity: 0, marginBottom: "0px", paddingTop: "0px", paddingBottom: "0px", borderTopWidth: "0px", borderBottomWidth: "0px" };
+  node.style.overflow = "hidden";
+  const a = node.animate(out ? [full, none] : [none, full], { duration: out ? FOLD_MS : ARRIVE_MS, easing: out ? "ease-in" : "ease-out", fill: out ? "forwards" : "none" });
+  a.currentTime = Math.max(0, at);
+  if (!out) a.onfinish = () => { node.style.overflow = ""; seedSeen(); };   // full height now: measure it for "seen"
+  setTimeout(() => {   // a stalled frame clock never leaves a card folded (and its finish event may wait for a frame)
+    try { if (a.playState !== "finished") a.finish(); } catch (e) {}
+    if (!out && node.isConnected) { node.style.overflow = ""; seedSeen(); }
+  }, Math.max(0, (out ? FOLD_MS : ARRIVE_MS) - at) + 80);
+}
+function animateTasks() {
+  if (!document.body.animate) return;
+  const now = Date.now(), reduced = REDUCED();
+  document.querySelectorAll("#tasksMain [data-exit]").forEach(n => {
+    const ex = state.exits.get(n.dataset.exit);
+    if (ex && !reduced && now - ex.t0 >= HOLD_MS) fold(n, now - ex.t0 - HOLD_MS, true);
+  });
+  const paneTop = $("#pane-tasks").getBoundingClientRect().top;
+  document.querySelectorAll("#tasksMain [data-arrive]").forEach(n => {
+    const t0 = state.arrive.get(n.dataset.arrive);
+    if (t0 == null || now - t0 >= ARRIVE_MS) { state.arrive.delete(n.dataset.arrive); return; }
+    if (!reduced && n.getBoundingClientRect().bottom > paneTop) fold(n, now - t0, false);
+  });
+}
+function shortTitle(t) {
+  t = String(t || "").trim(); if (t.length <= 34) return t;
+  const c = t.slice(0, 34), sp = c.lastIndexOf(" ");
+  return (sp > 18 ? c.slice(0, sp) : c).replace(/[\s,.:;\u2013\u2014-]+$/, "") + "\u2026";
+}
+const bar = { cur: null, queue: [], h: 0 };
+function showBar(text, ms, undoId) {
+  if (bar.cur && bar.cur.undoId && !undoId && state.undo.has(bar.cur.undoId)) { bar.queue.push([text, ms]); return; }   // never push an Undo off the bar
+  bar.cur = { undoId: undoId || null };
+  $("#barText").textContent = text;
+  $("#barUndo").style.display = $("#barDot").style.display = undoId ? "" : "none"; $("#bar").classList.toggle("has-undo", !!undoId);
+  $("#bar").style.display = "flex"; document.body.classList.add("has-bar");
+  clearTimeout(bar.h); bar.h = setTimeout(() => hideBar(), ms);
+}
+function hideBar(undoId) {
+  if (undoId && !(bar.cur && bar.cur.undoId === undoId)) return;
+  clearTimeout(bar.h); bar.cur = null; $("#bar").style.display = "none"; document.body.classList.remove("has-bar");
+  const q = bar.queue.shift(); if (q) showBar(q[0], q[1]);
+}
+$("#barUndo").onclick = () => { if (bar.cur && bar.cur.undoId) undoDone(bar.cur.undoId); };
+function updateBanner() {
+  const n = state.tasks ? state.unseen : 0;
+  $("#bannerText").textContent = "Cedric answered " + n;
+  $("#banner").style.display = n ? "flex" : "none";
+}
+$("#bannerShow").onclick = () => {
+  haptic(); closeReader(); showPane("tasks", true);
+  const n = $("#tasksMain [data-unseen]"); if (!n) return;
+  const pane = $("#pane-tasks");
+  pane.scrollTo({ top: Math.max(0, pane.scrollTop + n.getBoundingClientRect().top - pane.getBoundingClientRect().top - 64), behavior: REDUCED() ? "auto" : "smooth" });
+};
+// "New reply" turns to "Seen" once the card has been at least half on screen for 1.5 s.
+const seenWatch = new Map(); let seenObs = null;
+function watchSeen() {
+  if (seenObs) seenObs.disconnect();
+  if (!("IntersectionObserver" in window)) return;
+  const nodes = [...document.querySelectorAll("#tasksMain [data-unseen]")], ids = new Set(nodes.map(n => n.dataset.unseen));
+  for (const id of [...seenWatch.keys()]) if (!ids.has(id)) seenWatch.delete(id);
+  seenObs = new IntersectionObserver(entries => {
+    for (const en of entries) {
+      const id = en.target.dataset.unseen, vh = en.rootBounds ? en.rootBounds.height : window.innerHeight;
+      const half = en.isIntersecting && (en.intersectionRatio >= 0.5 || en.intersectionRect.height >= vh * 0.5);
+      if (half && !document.hidden) { if (!seenWatch.has(id)) seenWatch.set(id, Date.now()); } else seenWatch.delete(id);
+    }
+    checkSeen();
+  }, { threshold: [0, 0.25, 0.5, 0.75, 1], rootMargin: "0px 0px -70px 0px" });
+  nodes.forEach(n => seenObs.observe(n));
+  seedSeen();
+}
+// Also measured directly (after each render and when a card has folded in): the observer reports on the next frame, which can come late.
+function seedSeen() {
+  if (!document.hidden) for (const n of document.querySelectorAll("#tasksMain [data-unseen]")) if (halfOnScreen(n) && !seenWatch.has(n.dataset.unseen)) seenWatch.set(n.dataset.unseen, Date.now());
+  checkSeen();
+}
+// At least half of the card (or half the screen, for a very tall card) inside the Tasks pane as it shows now, above the tab bar.
+function halfOnScreen(n) {
+  const pane = $("#pane-tasks").getBoundingClientRect();
+  if (pane.right <= 1 || pane.left >= window.innerWidth - 1) return false;   // swiped over to Make
+  const r = n.getBoundingClientRect(), top = Math.max(r.top, pane.top, 0), bottom = Math.min(r.bottom, pane.bottom, window.innerHeight - 70);
+  const vis = Math.max(0, bottom - top);
+  return r.height > 0 && (vis >= r.height * 0.5 || vis >= (window.innerHeight - 70) * 0.5);
+}
+function checkSeen() {
+  clearTimeout(checkSeen.h); const now = Date.now(); let next = Infinity, any = false;
+  for (const [id, t] of seenWatch) {
+    if (now - t < SEEN_MS) { next = Math.min(next, t + SEEN_MS); continue; }
+    const n = document.querySelector('#tasksMain [data-unseen="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+    seenWatch.delete(id);
+    if (n && !document.hidden && halfOnScreen(n)) { seenIds.add(id); state.seenNow.add(id); any = true; }   // still there after 1.5 s
+  }
+  if (any) { saveSeen(); render("tasks"); }
+  if (next < Infinity) checkSeen.h = setTimeout(checkSeen, Math.max(50, next - now));
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) seenWatch.clear(); });
+
 // ---------- rendering and loading ----------
 function render(which) {
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === state.tab));
   for (const k of which ? [which] : PANES) {
     const main = $("#" + k + "Main"), pane = main.parentNode, top = pane.scrollTop;
+    const anchors = k === "tasks" && top > 0 ? placeOf(main, pane) : null;
     main.replaceChildren();
     if (state.error) main.append(el("div", { class: "msg" }, state.error));
     else if (k === "tasks") { if (state.tasks) renderTasks(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
     else { if (state.make) renderMake(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
     pane.scrollTop = top;
+    if (anchors) keepPlace(main, pane, anchors);
+    if (k === "tasks") { animateTasks(); watchSeen(); }
+  }
+  updateBanner();
+}
+// The first few cards at or below the top edge, and where they sit; after a re-render the first one that didn't just
+// move groups is put back at the same height on screen, so a reply landing above him doesn't shift what he's reading.
+function placeOf(main, pane) {
+  const top = pane.getBoundingClientRect().top, out = [];
+  for (const n of main.querySelectorAll("[data-id]")) {
+    const r = n.getBoundingClientRect();
+    if (r.top >= top - 1) { out.push({ id: n.dataset.id, d: r.top - top }); if (out.length >= 4) break; }
+  }
+  return out;
+}
+function keepPlace(main, pane, anchors) {
+  const top = pane.getBoundingClientRect().top;
+  for (const a of anchors) {
+    const n = main.querySelector('[data-id="' + (window.CSS && CSS.escape ? CSS.escape(a.id) : a.id) + '"]');
+    if (!n || n.dataset.arrive) continue;
+    pane.scrollTop += n.getBoundingClientRect().top - top - a.d; return;
   }
 }
 function settleOver(t0) { for (const [id, o] of state.over) if (!o.inflight && o.resolvedAt && o.resolvedAt < t0) state.over.delete(id); }
 function takeTasks(t, t0) {
   if (t && t.generated_at) state.skew = Date.now() - Date.parse(t.generated_at);
+  const prev = state.tasks;
   state.tasks = t; settleOver(t0);
+  if (t && seenFirstRun && !takeTasks.based) {   // first visit with this page: replies older than 30 min count as already seen
+    takeTasks.based = true;
+    for (const x of allItems(t)) { const e = newestReply(x); if (e && e.action_id && nowMs() - Date.parse(e.updated_at || e.created_at || 0) > 30 * 60e3) seenIds.add(e.action_id); }
+    saveSeen();
+  }
+  if (prev && t) noticeChanges(prev, t);
+}
+const allItems = d => ["needs", "working", "wait"].flatMap(g => (d && d[g]) || []);
+// Compare two server reads: a reply that came back folds in at the top; an item Cedric closed gets "Handled: ...".
+function noticeChanges(prev, t) {
+  const now = new Map(allItems(t).map(x => [x.id, x])), gone = [];
+  for (const x of allItems(prev)) {
+    if (!x.pending) continue;
+    const y = now.get(x.id);
+    if (!y) { const o = state.over.get(x.id); if (!state.undo.has(x.id) && !state.exits.has(x.id) && !(o && o.patch.status === "closed")) gone.push(x); continue; }
+    if (!y.pending && isUnseen(y)) state.arrive.set(y.id, Date.now());
+  }
+  if (gone.length) showBar("Handled: " + shortTitle(gone[0].title) + (gone.length > 1 ? " and " + (gone.length - 1) + " more" : ""), HANDLED_MS);
 }
 let loadingTasks = false;
 async function loadTasks() {
   if (!INIT || loadingTasks) return; loadingTasks = true; const t0 = ++state.clock;
   try {
     const t = await rpc("cedric_screen_tasks_v2", {}); takeTasks(t, t0); state.error = null;
-    const { generated_at, ...rest } = t || {}; const sig = JSON.stringify(rest) + "|" + state.over.size + "|" + state.undo.size + "|" + anyOffline(view());
+    const { generated_at, ...rest } = t || {}; const sig = JSON.stringify(rest) + "|" + state.over.size + "|" + state.undo.size + "|" + state.exits.size + "|" + anyOffline(view());
     if (sig !== state.sig) { state.sig = sig; render(); }
   } catch (e) { if (!state.tasks) { state.error = errText(e); render(); } }
   finally { loadingTasks = false; }
