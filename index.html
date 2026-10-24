@@ -12,6 +12,12 @@ Details. An answered card shows what happened for ~1 s over the next ask, which 
 Asks that arrive while he is on a card wait ("1 more ready after this") until he answers or skips it. A finish line when
 nothing is left. Everything else (with Cedric, Cedric's, waiting on, back later, no question yet, recent updates) sits
 behind one "Everything" list. No banner, no Seen, no New reply stripes, no Detail switch on Tasks.
+v4 (screens/CONTRACT-v4.md, research/2026-10-24-pa-architecture-pass/SYNTHESIS.md): every ask carries Cedric's pick, why,
+a quoted source line with "Wrong info", the pick as the main button, the real alternative as the second, and what happens
+if he leaves it. Done on something Cedric can check (a bill, a booking) goes to "Checking" until it shows up. A yes on a
+prepared item opens it at once (dialer with the number copied and the script sent to his chat, payment page with the
+amount copied), with the number or amount shown big as a fallback. One honest "watching" line says what Cedric is
+keeping an eye on and how fresh the data is. Heavier asks can wait for his day off ("Show anyway").
 -->
 <html lang="en">
 <head>
@@ -24,8 +30,10 @@ behind one "Everything" list. No banner, no Seen, no New reply stripes, no Detai
     --page:#F5F6F3; --card:#FFFFFF; --line:#E1E3DE; --ink:#16212C; --soft:#55606C; --faint:#8A939C;
     --navy:#1E3550; --navy-tint:#E8EDF3; --on-navy:#FFFFFF; --brass:#A9874F; --inset:#F1F3F0; --dim:rgba(14,22,30,.45); --bar:#FBFBF9; --warn:#85652E;
     --with:#A3ABB3; --reply:#2A66AC; --reply-tint:#E3EDF9; --on-reply:#FFFFFF; --done:#2C7A4B; --done-tint:#DDF0E3; --calm:#4A6077; --calm-tint:#E8EEF4;
+    --pick:#7D6232;
   }
   :root.dark{
+    --pick:#CDAE76;
     --page:#0F151C; --card:#18212B; --line:#26313D; --ink:#E9ECEF; --soft:#9AA6B2; --faint:#6F7B87;
     --navy:#B9CBE0; --navy-tint:#22303F; --on-navy:#0F151C; --brass:#8E7546; --inset:#121A23; --dim:rgba(0,0,0,.55); --bar:#141C25; --warn:#C9A86E;
     --with:#5A6774; --reply:#7EB2EA; --reply-tint:#1B2D41; --on-reply:#0F151C; --done:#74C594; --done-tint:#15301F; --calm:#A5B8CC; --calm-tint:#1F2B38;
@@ -73,6 +81,8 @@ behind one "Everything" list. No banner, no Seen, no New reply stripes, no Detai
   .why{font-size:17.5px;line-height:1.45;color:var(--soft);margin-top:9px;overflow-wrap:anywhere;white-space:pre-line}
   .dlink{display:inline-flex;align-items:center;gap:4px;font-size:15.5px;font-weight:600;color:var(--navy);padding:9px 0 2px;min-height:40px}
   .dlink .chev{margin-top:0}
+  .kick .dlink{position:relative;margin-left:auto;padding:0;min-height:0;font-size:15px}
+  .kick .dlink::after{content:"";position:absolute;inset:-12px -10px}
   .dlink[aria-expanded="true"] .chev{transform:rotate(180deg)}
   .choices{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .primary{width:100%;min-height:58px;border-radius:16px;background:var(--navy);color:var(--on-navy);font-size:19px;font-weight:650;line-height:1.25;padding:12px 18px;text-align:center}
@@ -83,9 +93,46 @@ behind one "Everything" list. No banner, no Seen, no New reply stripes, no Detai
   .tell{display:inline-flex;align-items:center;gap:7px;font-size:16.5px;font-weight:600;color:var(--navy);padding:12px 2px;min-height:50px}
   .skip{font-size:15.5px;font-weight:600;color:var(--soft);padding:12px 2px;min-height:50px}
   .gone-line{font-size:17px;line-height:1.4;color:var(--ink);font-weight:600;margin-top:12px}
+  /* v4: Cedric's pick, the source line, the way out, the watching line. */
+  .reco{display:flex;gap:10px;font-size:17.5px;line-height:1.36;font-weight:600;color:var(--ink);margin-top:12px;overflow-wrap:anywhere}
+  .reco::before{content:"";flex:none;width:3px;border-radius:2px;background:var(--brass)}
+  .reco .k{color:var(--pick);font-weight:700}
+  .why.s{font-size:16.5px;line-height:1.42;margin-top:8px}
+  .src{font-size:14px;line-height:1.42;color:var(--soft);margin-top:9px;overflow-wrap:anywhere}
+  .src q{quotes:"\201C" "\201D"}
+  .wrong{position:relative;font-size:13.5px;font-weight:600;color:var(--navy);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;margin-left:8px;white-space:nowrap}
+  .wrong::after{content:"";position:absolute;inset:-12px -8px}
+  .wayout{font-size:14.5px;line-height:1.4;color:var(--soft);margin:12px 2px 0}
+  .second.wide{flex-basis:100%}
+  .second .sub{display:block;font-size:14px;font-weight:500;color:var(--soft);margin-top:2px}
+  .tag.oh{color:var(--pick);background:transparent;border:1px solid var(--line)}
+  .kick .rest{color:var(--pick)}
+  .watch{display:flex;align-items:flex-start;gap:7px;font-size:14.5px;line-height:1.42;color:var(--soft);margin:-6px 2px 12px}
+  .watch svg{flex:none;margin-top:2px;color:var(--calm)}
+  .watch.stale svg{color:var(--warn)}
+  .finish .watch{margin:14px 0 0}
+  .restline{font-size:16px;line-height:1.42;color:var(--ink);margin-top:12px}
+  .restline button{font-weight:600;color:var(--navy);padding:6px 0 6px 6px}
+  /* v4: a yes that opened something (dialer, payment page): the number or amount big, Copy, open again. */
+  .hand{background:var(--inset);border-radius:16px;padding:13px 16px 14px;margin-top:14px}
+  .dark .hand{background:var(--navy-tint)}
+  .h-k{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soft)}
+  .h-big{font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:3px;overflow-wrap:anywhere}
+  .h-row{display:flex;gap:10px;margin-top:12px}
+  .h-row .second{flex:1 1 0;min-height:48px;background:var(--card);padding:10px 12px;font-size:16px}
+  .h-row .second.cp{flex:0 0 28%}
+  .dark .h-row .second{background:var(--card);border-color:var(--line)}
+  .h-note{font-size:14.5px;line-height:1.4;color:var(--soft);margin-top:10px;overflow-wrap:anywhere}
+  .h-note b{color:var(--ink);font-weight:600}
+  .script{margin-top:12px;border-left:3px solid var(--brass);padding-left:12px;display:flex;flex-direction:column;gap:4px}
+  .script div{font-size:15.5px;line-height:1.38;overflow-wrap:anywhere}
+  .chk{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:17px;line-height:1.4;font-weight:600;color:var(--calm)}
+  .chk svg{flex:none;margin-top:2px}
+  .chk.err{color:var(--warn)}
+  .chk button{color:var(--navy);font-weight:600;margin-left:6px}
   .acard.gone .ask{color:var(--faint)}
   /* Details: the original, Cedric's notes, earlier rounds. */
-  .details{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+  .details{margin-top:12px;display:flex;flex-direction:column;gap:8px}
   .d-title{font-size:15.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
   .d-notes{font-size:15.5px;line-height:1.42;color:var(--soft);overflow-wrap:anywhere;white-space:pre-line}
   .d-notes b{color:var(--ink);font-weight:600}
@@ -109,8 +156,10 @@ behind one "Everything" list. No banner, no Seen, no New reply stripes, no Detai
   .acard.exit .ask{opacity:.16}
   .x-done{background:var(--done-tint);border-color:var(--done);box-shadow:inset 0 0 0 1px var(--done)}
   .x-calm{background:var(--calm-tint);border-color:var(--calm);box-shadow:inset 0 0 0 1px var(--calm)}
-  .x-badge{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:9px;font-size:21px;font-weight:700;letter-spacing:-.005em}
-  .x-badge svg{width:26px;height:26px}
+  .x-badge{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:21px;font-weight:700;letter-spacing:-.005em;padding:0 16px;text-align:center}
+  .x-line{display:flex;align-items:center;gap:9px}
+  .x-sub{font-size:16.5px;font-weight:600;opacity:.9}
+  .x-badge svg{width:26px;height:26px;flex:none}
   .x-done .x-badge{color:var(--done)} .x-calm .x-badge{color:var(--calm)}
   /* The next few, one line each. */
   .nexth{font-size:13.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin:20px 2px 8px}
@@ -134,6 +183,10 @@ behind one "Everything" list. No banner, no Seen, no New reply stripes, no Detai
   .e-m{flex:0 1 auto;max-width:46%;font-size:14.5px;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media (max-width:420px){ .e-m{max-width:40%;font-size:14px} }
   .e-m.on{color:var(--navy);font-weight:600} .e-m.warn{color:var(--warn);font-weight:600} .e-m.back{color:var(--ink);font-weight:600}
+  .c-wrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .c-wrap .e-t{min-width:0}
+  .c-s{font-size:14.5px;line-height:1.3;color:var(--calm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-chk{border:2px solid var(--calm);background:var(--calm-tint)}
   .urow{display:block;width:100%;padding:12px 16px;border-top:1px solid var(--line);text-align:left}
   .urow:first-child{border-top:0}
   .u-top{display:flex;align-items:baseline;gap:10px}
@@ -225,7 +278,8 @@ const CONFIG = { url: "https://aeneuhxfhlygzanmztgg.supabase.co", key: "sb_publi
 const tg = window.Telegram && window.Telegram.WebApp;
 const INIT = tg ? tg.initData : "";
 const PANES = ["tasks", "make"];
-const INSTANT = new Set(["done", "later", "hold", "unhold"]);
+const INSTANT = new Set(["done", "later", "hold", "unhold", "confirmed_by_owner"]);
+const DEFER = new Set(["later", "hold", "notyet", "not_yet", "notnow", "not_now", "skip", "drop", "park", "park30"]);
 const NY = "America/New_York";
 const OFFLINE_MS = 90e3, UNDO_MS = 5000, POLL_MS = 10e3, EDGE_PX = 24;
 const HOLD_MS = 1000, FOLD_MS = 380;   // an answered card: tinted for HOLD_MS, then folds away over FOLD_MS
@@ -246,10 +300,12 @@ const state = {
   // being a question for him without his doing (kept, with a line saying so, until he moves on).
   q: { order: [], fresh: [], shown: null, gone: null, snap: new Map() },
   card: null,          // { id, item } of the full card opened from Everything
+  hand: null,          // v4: the prepared action he just opened (dialer, payment page); stays up until he taps Next
+  showRest: false,     // v4: "Show anyway" tapped: the asks held for his day off join this visit's order
   clock: 0, sheet: null, drafts: {}
 };
 try { state.drafts = JSON.parse(sessionStorage.getItem("cedric.drafts") || "{}") || {}; } catch (e) { state.drafts = {}; }
-const SOURCE = { gmail: "Gmail", calendar: "Calendar", ticktick: "TickTick", tiller: "Bank", bank: "Bank", chat: "Chat", campaign: "Plan", health: "Health", cedric: "Cedric" };
+const SOURCE = { gmail: "Gmail", calendar: "Calendar", ticktick: "TickTick", tiller: "Bank", bank: "Bank", chat: "Chat", campaign: "Plan", health: "Health", cedric: "Cedric", telegram: "Chat" };
 const $ = (s, r) => (r || document).querySelector(s);
 
 function el(tag, attrs, ...kids) {
@@ -272,7 +328,9 @@ const ICON = {
   refresh: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a6 6 0 1 1-1.8-4.3"/><path d="M16 3.5v3.5h-3.5"/></svg>',
   sent: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h11M10 4.5L14.5 9 10 13.5"/></svg>',
   clock: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6.5"/><path d="M9 5.5V9l2.5 1.5"/></svg>',
-  check: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5l3.5 3.5 7.5-8"/></svg>'
+  check: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 9.5l3.5 3.5 7.5-8"/></svg>',
+  eye: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>',
+  wclock: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.8V8l2.2 1.4"/></svg>'
 };
 
 // ---------- talking to the database ----------
@@ -295,8 +353,11 @@ function newId() {
 // Every action carries its own client_id; a network failure is retried once with the SAME id, so it can never land twice.
 async function act(a) {
   const p_action = { client_id: newId(), ...a };
-  try { return await rpc("cedric_screen_act", { p_action }); }
-  catch (e) { if (!e.network) throw e; await new Promise(r => setTimeout(r, 1200)); return await rpc("cedric_screen_act", { p_action }); }
+  return sendAct(p_action);
+}
+async function sendAct(p_action) {
+  try { return await rpc("cedric_screen_act_v4", { p_action }); }
+  catch (e) { if (!e.network) throw e; await new Promise(r => setTimeout(r, 1200)); return await rpc("cedric_screen_act_v4", { p_action }); }
 }
 
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = "none", 3200); }
@@ -336,10 +397,13 @@ function dueText(it) { return it.due ? (Date.parse(it.due) < nowMs() ? "Was due 
 function laterLabel() { return (state.tasks && state.tasks.later && state.tasks.later.label) || "Later"; }
 
 // ---------- what the screen shows = last server read + optimistic changes ----------
-const GROUPS = ["asks", "yours", "with_cedric", "cedric", "waiting", "parked"];
+const GROUPS = ["asks", "yours", "with_cedric", "checking", "cedric", "waiting", "parked"];
+const ALL_KEYS = GROUPS.concat(["rest"]);   // "rest" = asks held for his day off (from the database's `rest` list)
 // The same rules as cedric_screen_tasks_v3, used only for an item he has just changed (until the server catches up).
+// v4: a loop whose stage is "checking" (he said done or paid; Cedric waits to see it) is in Checking, whatever its group.
 function classify(x) {
   if (x.status === "closed" || x.status === "done") return null;
+  if (x.stage === "checking") return "checking";
   if (x.pending) return "with_cedric";
   if (x.status === "waiting_world") return "waiting";
   if (x.status === "held" && !(x.bring_back_at && Date.parse(x.bring_back_at) <= nowMs() && x.owner === "lamont")) return "parked";
@@ -368,16 +432,27 @@ function applyOver(it) {
 }
 function groups() {
   const d = state.tasks || {}, out = {}, seen = new Set();
-  for (const g of GROUPS) out[g] = [];
+  for (const g of ALL_KEYS) out[g] = [];
   for (const g of GROUPS) for (const it of (d[g] || [])) {
     if (seen.has(it.id)) continue; seen.add(it.id);
     const o = state.over.get(it.id), x = applyOver(it);
-    const ng = o && ("status" in o.patch || o.add.length || o.hide.size) ? classify(x) : g;
+    const ng = o && ("status" in o.patch || "stage" in o.patch || o.add.length || o.hide.size) ? classify(x) : x.stage === "checking" ? "checking" : g;
+    if (ng) out[ng].push(x);
+  }
+  for (const it of restItems()) {   // held for his day off: in Everything, or after the other asks once he taps "Show anyway"
+    if (seen.has(it.id)) continue; seen.add(it.id);
+    const o = state.over.get(it.id), x = { ...applyOver(it), _rest: true };
+    let ng = o && ("status" in o.patch || "stage" in o.patch || o.add.length || o.hide.size) ? classify(x) : "asks";
+    if (ng === "asks" && !state.showRest) ng = "rest";
     if (ng) out[ng].push(x);
   }
   return out;
 }
-function findItem(id, gr) { gr = gr || groups(); for (const g of GROUPS) { const x = gr[g].find(y => y.id === id); if (x) return { it: x, g }; } return null; }
+// v4 top-level fields. `rest` = the held asks themselves (if the database sends them); held_for_rest = how many.
+function restItems() { const t = state.tasks || {}; return Array.isArray(t.rest) ? t.rest : Array.isArray(t.held_for_rest) ? t.held_for_rest : []; }
+function restCount() { const t = state.tasks || {}; return typeof t.held_for_rest === "number" ? t.held_for_rest : restItems().length; }
+function feedsList() { const f = (state.tasks || {}).feeds; return Array.isArray(f) ? f : f && typeof f === "object" ? Object.values(f) : []; }
+function findItem(id, gr) { gr = gr || groups(); for (const g of ALL_KEYS) { const x = gr[g].find(y => y.id === id); if (x) return { it: x, g }; } return null; }
 const liveEntry = e => e && (e.status === "queued" || e.status === "claimed");
 const bridgeStale = () => { const b = state.tasks && state.tasks.bridge_seen_at; return !b || nowMs() - Date.parse(b) > OFFLINE_MS; };
 const waitingOffline = e => e && e.status === "queued" && nowMs() - Date.parse(e.created_at || nowMs()) > OFFLINE_MS && bridgeStale();
@@ -400,7 +475,7 @@ function syncQueue(gr) {
   q.order = q.order.filter((id, i) => A.has(id) || (i === 0 && id === q.shown && !state.over.has(id) && !state.exits.has(id) && q.snap.has(id)));
   q.gone = q.order.length && !A.has(q.order[0]) ? q.order[0] : null;
   q.fresh = q.fresh.filter(id => A.has(id) && !q.order.includes(id));
-  const direct = !q.order.length;
+  const direct = !q.order.length && !state.hand;   // the opened-action card counts as a card that is up
   for (const x of gr.asks) if (!q.order.includes(x.id) && !q.fresh.includes(x.id)) (direct ? q.order : q.fresh).push(x.id);
 }
 function boundary() { const q = state.q; q.order = q.order.concat(q.fresh.filter(id => !q.order.includes(id))); q.fresh = []; }
@@ -411,19 +486,19 @@ function leaveQueue(id) {   // he acted on it somewhere: it leaves this visit's 
   if (i === 0) boundary();
   q.fresh = q.fresh.filter(x => x !== id);
 }
-function leaveCurrent(it, kind, word) {   // answered on Up next: tinted over the next ask, which is already in place
+function leaveCurrent(it, kind, word, sub) {   // answered on Up next: tinted over the next ask, which is already in place
   leaveQueue(it.id); state.details.delete(it.id); state.q.gone = null;
-  state.exits.set(it.id, { id: it.id, kind, word, item: it, t0: Date.now(), phase: 0 });
+  state.exits.set(it.id, { id: it.id, kind, word, sub: sub || null, item: it, t0: Date.now(), phase: 0 });
   setTimeout(tick, 0); slotIntoView();
 }
-function away(it, where, kind, word) { if (where === "next") leaveCurrent(it, kind, word); else leaveQueue(it.id); }
+function away(it, where, kind, word, sub) { if (where === "next") leaveCurrent(it, kind, word, sub); else leaveQueue(it.id); }
 function putBack(id, where) { state.exits.delete(id); if (where === "next") toFront(id); }
 function skip() {
   const q = state.q, id = q.order.shift(); if (id == null) return;
   boundary(); if (id !== q.gone) q.order.push(id);
   state.details.delete(id); haptic(); render("tasks"); slotIntoView();
 }
-function pick(id) { toFront(id); haptic(); render("tasks"); slotIntoView(); }
+function pick(id) { state.hand = null; toFront(id); haptic(); render("tasks"); slotIntoView(); }
 function slotIntoView() {
   const pane = $("#pane-tasks"), s = $("#tasksMain .slot");
   if (s && s.getBoundingClientRect().top < pane.getBoundingClientRect().top) pane.scrollTop = 0;
@@ -491,8 +566,44 @@ function detailsBox(it, where, withTitle) {
 function tellButton(it, where) { return el("button", { class: "tell", onclick: () => openNote(it, null, where) }, svg(ICON.pen), state.drafts[it.id] ? "Finish your note…" : "Tell Cedric…"); }
 function kicker(it, groupName) {
   const d = dueText(it);
+  const dl = it.hard_deadline && (!it.due || shortDay(it.hard_deadline) !== shortDay(it.due)) ? "Deadline " + shortDay(it.hard_deadline) : null;
   return el("div", { class: "kick" }, groupName ? el("span", {}, groupName) : null, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind || "Cedric"),
-    d ? el("span", { class: "due" + (/^Was/.test(d) ? " past" : "") }, d) : null);
+    d ? el("span", { class: "due" + (/^Was/.test(d) ? " past" : "") }, d) : null, dl ? el("span", {}, dl) : null,
+    it.needs_office_hours ? el("span", { class: "tag oh" }, "Call before 5 PM") : null,
+    it._rest && !groupName ? el("span", { class: "rest" }, "Could wait for your day off") : null);
+}
+// v4: Cedric's pick, said as his ("My pick: …" unless the text already speaks as Cedric).
+function recoLine(it) {
+  const r = String(it.recommend || "").trim(); if (!r) return null;
+  return el("div", { class: "reco" }, el("span", {}, /^(I|I'd|I'm|I'll|I would|My)\b/.test(r) ? null : el("span", { class: "k" }, "My pick: "), r));
+}
+// The line the facts came from, quoted, with a small "Wrong info" (Cedric rechecks; it goes to With Cedric).
+function sourceLine(it, where) {
+  const s = String(it.source_quote || "").trim(); if (!s) return null;
+  return el("div", { class: "src" }, el("q", {}, s), where ? el("button", { class: "wrong", onclick: () => wrongInfo(it, where) }, "Wrong info") : null);
+}
+function wayOut(it) { const w = String(it.way_out || "").trim(); return w ? el("div", { class: "wayout" }, w) : null; }
+// The full text of an ask: question, pick, why, source line.
+function askBody(it, where) {
+  return [el("div", { class: askClass(it) }, askText(it)), recoLine(it),
+    it.why ? el("div", { class: "why" + (it.recommend ? " s" : "") }, it.why) : null, sourceLine(it, where)];
+}
+const handoffOf = it => it && it.handoff && typeof it.handoff === "object" && it.handoff.kind ? it.handoff : null;
+// A confirmation rule Cedric can check himself (bank line, email, calendar): Done then means "checking", not closed.
+const checkable = it => { const r = it && it.confirm_rule; return !!(r && typeof r === "object" && r.kind && r.kind !== "his_word"); };
+const SEE = { bank_tx: "in the bank", email: "in your email", calendar: "on your calendar" };
+function checkText(x) {
+  const r = x.confirm_rule || {}, h = handoffOf(x) || {};
+  const did = h.kind === "pay" || (!h.kind && r.kind === "bank_tx") ? "Paid" : h.kind === "call" ? "Called" : h.kind === "email" ? "Sent" : "Done";
+  if (SEE[r.kind]) return did + ", waiting to see it " + SEE[r.kind];
+  if (x.waiting_on) return did + ", waiting on " + x.waiting_on;
+  return did + ", waiting to confirm it";
+}
+// A button label that already says the alternative (most of its words are in it) doesn't get it again underneath.
+function similar(label, alt) {
+  const w = s => String(s || "").toLowerCase().replace(/[^a-z0-9$]+/g, " ").trim().split(" ").filter(Boolean);
+  const a = w(label), b = new Set(w(alt)); if (!a.length || !b.size) return false;
+  return a.filter(x => b.has(x)).length / a.length >= 0.6;
 }
 function choiceLabel(c) { return c.code === "later" && (!c.label || /^later$/i.test(c.label)) ? laterLabel() : c.label; }
 const DEFAULT_CHOICES = [{ code: "later", label: "Later" }, { code: "done", label: "Done", primary: true }];
@@ -508,9 +619,20 @@ function choicesFor(it) {
 function choiceButtons(it, where, detailsOpen) {
   const { list, primary } = choicesFor(it), others = list.filter(c => c !== primary);
   const review = it.preview && it.preview.draft && !detailsOpen;   // an email is read before it is sent
+  // v4: the real alternative is the second button. A choice marked alt (or the first one that isn't a "not now") carries
+  // it; if he has no such choice, the alternative becomes its own button (goes to Cedric as code "alternative").
+  const alt = String(it.alternative || "").trim();
+  if (alt && primary) {
+    let i = others.findIndex(c => c.alt);
+    if (i < 0) i = others.findIndex(c => !DEFER.has(c.code) && !/^(grant|revoke):/.test(c.code));
+    const used = (it.thread || []).some(e => e.code === "alternative" && e.status !== "cancelled" && e.status !== "superseded");
+    if (i >= 0) { if (!similar(others[i].label, alt)) others[i] = { ...others[i], _sub: alt }; others.unshift(others.splice(i, 1)[0]); }
+    else if (!used) others.unshift({ code: "alternative", label: alt });
+  }
   const box = el("div", { class: "choices" });
-  if (primary) box.append(el("button", { class: "primary", onclick: () => review ? (state.details.add(it.id), render()) : choose(it, primary, where) }, review ? "Read the email first" : choiceLabel(primary)));
-  if (others.length) box.append(el("div", { class: "seconds" }, others.map(c => el("button", { class: "second", onclick: () => choose(it, c, where) }, choiceLabel(c)))));
+  if (primary) box.append(el("button", { class: "primary", onclick: () => review ? (state.details.add(it.id), render()) : handoffOf(it) ? handoff(it, primary, where) : choose(it, primary, where) }, review ? "Read the email first" : choiceLabel(primary)));
+  if (others.length) box.append(el("div", { class: "seconds" }, others.map(c => el("button", { class: "second" + (c._sub || choiceLabel(c).length > 22 ? " wide" : ""), onclick: () => choose(it, c, where) },
+    choiceLabel(c), c._sub ? el("span", { class: "sub" }, c._sub) : null))));
   return box.childNodes.length ? box : null;
 }
 const askText = it => it.ask || it.title;
@@ -519,13 +641,50 @@ const askClass = it => "ask" + (askText(it).length > 80 ? " long" : "");
 // The one question in full.
 function askCard(it, canSkip) {
   const det = state.details.has(it.id);
-  const card = el("div", { class: "acard", "data-id": it.id }, kicker(it), el("div", { class: askClass(it) }, askText(it)));
-  if (it.why) card.append(el("div", { class: "why" }, it.why));
-  card.append(el("button", { class: "dlink", "aria-expanded": det ? "true" : "false", onclick: () => { det ? state.details.delete(it.id) : state.details.add(it.id); render("tasks"); } },
+  const k = kicker(it);
+  k.append(el("button", { class: "dlink", "aria-expanded": det ? "true" : "false", onclick: () => { det ? state.details.delete(it.id) : state.details.add(it.id); render("tasks"); } },
     det ? "Hide details" : "Details", svg(ICON.chev)));
+  const card = el("div", { class: "acard", "data-id": it.id }, k, askBody(it, "next"));
   if (det) card.append(detailsBox(it, "next", true));
   const ch = choiceButtons(it, "next", det); if (ch) card.append(ch);
+  const w = wayOut(it); if (w) card.append(w);
   card.append(el("div", { class: "under" }, tellButton(it, "next"), canSkip ? el("button", { class: "skip", onclick: skip }, "Skip for now") : null));
+  return card;
+}
+// v4: what he just opened (dialer, payment page, his draft) stays on the card until he taps Next: the number or amount big
+// with Copy and open-again (the fallback when opening didn't work), the call script, and whether Cedric is checking.
+function fmtPhone(p) {
+  const d = String(p || "").replace(/\D/g, ""), n = d.length === 11 && d[0] === "1" ? d.slice(1) : d;
+  return n.length === 10 ? "(" + n.slice(0, 3) + ") " + n.slice(3, 6) + "-" + n.slice(6) : String(p || "");
+}
+const fmtAmount = a => /^\d+(\.\d{1,2})?$/.test(String(a || "").trim()) ? "$" + String(a).trim() : String(a || "");
+function handCard(h) {
+  const it = h.item, x = h.handoff, more = state.q.order.length + state.q.fresh.length > 0;
+  const card = el("div", { class: "acard", "data-id": it.id }, kicker(it), el("div", { class: askClass(it) }, askText(it)));
+  const panel = el("div", { class: "hand" });
+  const copyBtn = (text, what) => el("button", { class: "second cp", onclick: () => { copyText(text) ? (haptic("ok"), toast(what + " copied.")) : toast("Couldn't copy. Press and hold to copy it."); } }, "Copy");
+  if (x.kind === "call") {
+    panel.append(el("div", { class: "h-k" }, "Call"), el("div", { class: "h-big" }, fmtPhone(x.phone)),
+      el("div", { class: "h-row" }, copyBtn(String(x.phone || ""), "Number"), el("button", { class: "second", onclick: () => openTarget(telHref(x.phone)) }, "Call")));
+    if (Array.isArray(x.script) && x.script.length) panel.append(el("div", { class: "script" }, x.script.slice(0, 3).map(l => el("div", {}, l))));
+    panel.append(el("div", { class: "h-note" }, h.script === "sent" ? "Script also sent to your chat. " : "", x.copy ? ["Copied: ", el("b", {}, x.copy), ". "] : "", "Didn't open? Copy the number and dial."));
+  } else if (x.kind === "pay") {
+    panel.append(el("div", { class: "h-k" }, "Amount"), el("div", { class: "h-big" }, fmtAmount(x.amount || x.copy)),
+      el("div", { class: "h-row" }, copyBtn(String(x.copy || x.amount || ""), "Amount"), /^https:\/\//.test(x.url || "") ? el("button", { class: "second", onclick: () => openTarget(x.url) }, "Open payment page") : null),
+      el("div", { class: "h-note" }, x.copy ? "The amount is copied. Paste it on the payment page. " : "", "Didn't open? Tap the button again."));
+  } else {
+    const url = x.open_url || x.url;
+    panel.append(el("div", { class: "h-k" }, x.kind === "email" ? "Your draft" : "Link"),
+      x.copy ? el("div", { class: "h-big" }, x.copy) : null,
+      el("div", { class: "h-row" }, x.copy ? copyBtn(String(x.copy), "Text") : null, /^https:\/\//.test(url || "") ? el("button", { class: "second", onclick: () => openTarget(url) }, x.kind === "email" ? "Open your drafts" : "Open it again") : null));
+  }
+  card.append(panel);
+  if (h.err) card.append(el("div", { class: "chk err" }, el("span", {}, "Cedric didn't get this yet.", el("button", { onclick: () => recordHandoff(h) }, "Try again"))));
+  else if (h.checking) card.append(el("div", { class: "chk" }, svg(ICON.clock), el("span", {}, "Checking: I'll confirm when it shows up.")));
+  else if (x.kind === "call") card.append(el("div", { class: "chk" }, svg(ICON.check), el("span", {}, "When you hang up, tell me how it went.")));
+  else card.append(el("div", { class: "chk" }, svg(ICON.check), el("span", {}, "Saved. Cedric has it.")));
+  card.append(el("div", { class: "choices" }, el("button", { class: "primary", onclick: closeHand }, more ? "Next" : "OK")));
+  card.append(el("div", { class: "under" }, tellButton(it, "card")));
   return card;
 }
 function goneCard(it, more, h) {
@@ -536,48 +695,67 @@ function goneCard(it, more, h) {
 function exitCard(ex) {
   const n = el("div", { class: "acard exit " + (ex.kind === "done" ? "x-done" : "x-calm"), "data-exit": ex.id },
     el("div", { class: askClass(ex.item) }, askText(ex.item)),
-    el("div", { class: "x-badge" }, svg(ex.kind === "done" ? ICON.check : ex.kind === "sent" ? ICON.sent : ICON.clock), ex.word));
+    el("div", { class: "x-badge" }, el("div", { class: "x-line" }, svg(ex.kind === "done" ? ICON.check : ex.kind === "sent" ? ICON.sent : ICON.clock), ex.word),
+      ex.sub ? el("div", { class: "x-sub" }, ex.sub) : null));
   return n;
 }
+// v4: one honest line on what Cedric is watching and how fresh the data is (written by the database). Calm when stale.
+function watchLine() {
+  const w = String((state.tasks || {}).watching || "").trim(); if (!w) return null;
+  const stale = feedsList().some(f => f && f.is_stale);
+  return el("div", { class: "watch" + (stale ? " stale" : "") }, svg(stale ? ICON.wclock : ICON.eye), el("span", {}, w));
+}
 function finishBlock(gr) {
-  const n = gr.with_cedric.length + gr.cedric.length;
+  const n = gr.with_cedric.length + gr.cedric.length, rest = state.showRest && restItems().length ? 0 : restCount();
   return el("div", { class: "finish" },
     el("div", { class: "fin-mark" }, svg(ICON.check)),
     el("div", { class: "fin-t" }, "Nothing else needs you right now."),
     el("div", { class: "fin-s" }, n ? n + " with Cedric. I'll text you when anything's ready." : "All clear."),
+    rest ? el("div", { class: "restline" }, plural(rest, "bigger one is", "bigger ones are") + " waiting for your day off.", el("button", { onclick: showRest }, "Show anyway")) : null,
+    watchLine(),
     el("button", { class: "pill fin-all", onclick: toAll }, "Everything", svg(ICON.right)));
+}
+function showRest() {
+  haptic();
+  if (!restItems().length) { toAll(); return; }   // the database sent only a count: they are in Everything
+  state.showRest = true; render("tasks"); slotIntoView();
 }
 
 function renderNext(main, gr) {
   const q = state.q, A = new Map(gr.asks.map(x => [x.id, x]));
   main.append(header(partOfDay(), [el("button", { class: "pill", onclick: toAll }, "Everything"), refreshBtn()], anyOffline(gr)));
-  const live = q.order.filter(id => id !== q.gone), cur = q.order[0];
+  const hand = state.hand, cur = hand ? null : q.order[0], live = q.order.filter(id => id !== q.gone);
   q.shown = cur || null;
-  if (cur) main.append(el("h1", { class: "count" }, live.length ? plural(live.length, "decision ready", "decisions ready") : "Nothing else needs you right now."));
+  if (cur || hand) main.append(el("h1", { class: "count" }, live.length ? plural(live.length, "decision ready", "decisions ready") : hand ? "Nothing else after this." : "Nothing else needs you right now."));
   else main.append(el("div", { style: "height:8px" }));
+  if (cur || hand) { const w = watchLine(); if (w) main.append(w); }
   const slot = el("div", { class: "slot" });
-  if (!cur) slot.append(finishBlock(gr));
+  if (hand) slot.append(handCard(hand));
+  else if (!cur) slot.append(finishBlock(gr));
   else if (cur === q.gone) slot.append(goneCard(q.snap.get(cur), q.order.length + q.fresh.length > 1, q.h && q.h.id === cur ? q.h.h : 0));
   else slot.append(askCard(A.get(cur), q.order.length + q.fresh.length > 1));
   for (const ex of state.exits.values()) slot.append(exitCard(ex));
   main.append(slot);
   if (cur && cur !== q.gone) q.h = { id: cur, h: slot.firstChild.offsetHeight };
-  const next = q.order.slice(1, 4).map(id => A.get(id)).filter(Boolean);
+  const from = hand ? 0 : 1;   // with the opened-action card up, the first ask waits in the previews
+  const next = q.order.slice(from, from + 3).map(id => A.get(id)).filter(Boolean);
   if (next.length) main.append(el("div", { class: "nexth" }, "After this"),
     el("div", { class: "list" }, next.map(x => el("button", { class: "pv", onclick: () => pick(x.id) }, el("span", { class: "t" }, askText(x)), svg(ICON.right)))));
-  const over = Math.max(0, q.order.length - 4), waiting = q.fresh.length;
+  const over = Math.max(0, q.order.length - from - 3), waiting = q.fresh.length;
   if (over + waiting) main.append(el("div", { class: "after" }, over ? (over + waiting) + " more after these" : waiting + " more ready after this"));
 }
 
 // ---------- Everything: one line per item ----------
-const ALL_GROUPS = [["with_cedric", "With Cedric", "m-with"], ["cedric", "Cedric's", "m-work"], ["waiting", "Waiting on", "m-wait"], ["parked", "Back later", "m-wait"], ["yours", "Yours, no question yet", "m-need"]];
+const ALL_GROUPS = [["with_cedric", "With Cedric", "m-with"], ["checking", "Checking", "m-chk"], ["cedric", "Cedric's", "m-work"], ["waiting", "Waiting on", "m-wait"], ["parked", "Back later", "m-wait"], ["rest", "For your day off", "m-need"], ["yours", "Yours, no question yet", "m-need"]];
 function rowMeta(x, g) {
-  if (g === "with_cedric") return isOffline(x) ? ["Offline, waits", "warn"] : x.pending && x.pending.status === "claimed" ? ["On it now", "on"] : ["In line", ""];
+  if (g === "with_cedric") return isOffline(x) ? ["Offline, waits", "warn"] : x.pending && x.pending.status === "claimed" ? ["On it now", "on"] : x.pending && x.pending.code === "wrong" ? ["Rechecking", ""] : ["In line", ""];
   if (g === "waiting") return [x.waiting_on || "someone else", ""];
   if (g === "parked") return [backShort(x), x.bring_back_at ? "back" : ""];
   return [dueText(x) || SOURCE[x.source_kind] || "", ""];
 }
 function allRow(x, g) {
+  if (g === "checking") return el("button", { class: "erow", "data-id": x.id, onclick: () => openCard(x.id) },
+    el("span", { class: "c-wrap" }, el("span", { class: "e-t" }, x.title), el("span", { class: "c-s" }, checkText(x))), svg(ICON.right));
   const [m, cls] = rowMeta(x, g);
   return el("button", { class: "erow", "data-id": x.id, onclick: () => openCard(x.id) }, el("span", { class: "e-t" }, x.title), m ? el("span", { class: "e-m " + cls }, m) : null, svg(ICON.right));
 }
@@ -603,7 +781,7 @@ function toAll() { state.view = "all"; haptic(); $("#pane-tasks").scrollTop = 0;
 function toNext() { state.view = "next"; boundary(); haptic(); $("#pane-tasks").scrollTop = 0; render("tasks"); }
 
 // ---------- a full card, opened from Everything ----------
-const GROUP_NAME = { asks: "Up next", yours: "Yours", with_cedric: "With Cedric", cedric: "Cedric's", waiting: "Waiting on", parked: "Back later" };
+const GROUP_NAME = { rest: "For your day off", asks: "Up next", yours: "Yours", with_cedric: "With Cedric", checking: "Checking", cedric: "Cedric's", waiting: "Waiting on", parked: "Back later" };
 function openCard(id) { const f = findItem(id); if (!f) return; state.card = { id, item: f.it }; haptic(); renderCard(); $("#cardview").scrollTop = 0; }
 function closeCard() { state.card = null; $("#cardview").style.display = "none"; syncBack(); }
 function renderCard(gr) {
@@ -612,19 +790,25 @@ function renderCard(gr) {
   if (f) state.card.item = it;
   const top = v.scrollTop;
   const card = el("div", { class: "fcard" + (g ? "" : " gonecard") }, kicker(it, g ? GROUP_NAME[g] : "Closed"));
-  if (g === "asks" || g === "yours") {
-    card.append(el("div", { class: askClass(it) }, askText(it)));
-    if (it.why) card.append(el("div", { class: "why" }, it.why));
+  if (g === "asks" || g === "yours" || g === "rest") {
+    card.append(askBody(it, it.ask ? "card" : null));
     card.append(detailsBox(it, "card", !!it.ask));
     const ch = choiceButtons(it, "card", true); if (ch) card.append(ch);
+    const w = wayOut(it); if (w) card.append(w);
     card.append(el("div", { class: "under" }, tellButton(it, "card")));
   } else {
     card.append(el("div", { class: "f-title" }, it.title));
     if (!g) card.append(el("div", { class: "f-sub" }, "This one is closed. Nothing left to do here."));
     if (g === "waiting") card.append(el("div", { class: "f-state" }, "Waiting on ", el("b", {}, it.waiting_on || "someone else"), "."));
+    if (g === "checking") {
+      const by = it.confirm_rule && it.confirm_rule.by;
+      card.append(el("div", { class: "chk" }, svg(ICON.clock), el("span", {}, "Checking: I'll confirm when it shows up.")),
+        el("div", { class: "f-sub" }, checkText(it) + "." + (by ? " If I don't see it by " + shortDay(by) + ", I'll ask you." : "")));
+    }
     if (g === "parked") card.append(el("div", { class: "f-state" }, it.bring_back_at ? el("b", {}, backLine(it) + ".") : "Parked, no date set."));
     if (g) card.append(detailsBox(it, "card", false));
     if (g === "parked") card.append(el("div", { class: "seconds" }, el("button", { class: "second", onclick: () => choose(it, { code: "unhold", label: "Bring it back now" }, "card") }, "Bring it back now")));
+    if (g === "checking") card.append(el("div", { class: "seconds" }, el("button", { class: "second", onclick: () => choose(it, { code: "confirmed_by_owner", label: "Yes, it went through" }, "card") }, "Yes, it went through")));
     if (g) card.append(el("div", { class: "under" }, tellButton(it, "card")));
   }
   v.replaceChildren(el("button", { class: "back", onclick: closeCard }, "‹ Everything"), card);
@@ -724,15 +908,15 @@ $("#noteSend").onclick = async () => {
 };
 
 // ---------- taps ----------
-async function queueAction(it, c, onFail, where) {
-  away(it, where, "sent", "Sent to Cedric");   // from Up next: tinted over the next ask, then it sits in Everything under With Cedric
+async function queueAction(it, c, onFail, where, word) {
+  away(it, where, "sent", word || "Sent to Cedric");   // from Up next: tinted over the next ask, then it sits in Everything under With Cedric
   const o = begin(it.id);
   const temp = { action_id: null, code: c.code, label: c.label, note: c.note || null, status: "queued", answer: null, created_at: new Date(nowMs()).toISOString(), _temp: true };
   const hid = c.code === "note" ? [] : (it.thread || []).filter(e => e.status === "queued" && e.code !== "note" && e.action_id && !o.hide.has(e.action_id)).map(e => e.action_id);
   hid.forEach(id => o.hide.add(id));   // a newer choice replaces an older one
   o.add.push(temp); render(); haptic();
   try {
-    const r = await act({ loop_id: it.id, code: c.code, label: c.label, note: c.note, revision: it.revision });
+    const r = await act({ loop_id: it.id, code: c.code, label: c.label, note: c.note, choice: c.choice, revision: it.revision });
     temp.action_id = r && r.action_id; temp.status = (r && r.status) || "queued"; settle(o); haptic("ok");
   } catch (e) {
     settle(o); o.add = o.add.filter(x => x !== temp); hid.forEach(id => o.hide.delete(id)); onFail && onFail(); putBack(it.id, where);
@@ -743,16 +927,18 @@ async function queueAction(it, c, onFail, where) {
 async function choose(it, c, where) {
   if (!INSTANT.has(c.code)) return queueAction(it, { code: c.code, label: c.label }, null, where);
   haptic();
-  const before = { status: it.status, bring_back_at: it.bring_back_at || null, held_since: it.held_since || null };
+  const before = { status: it.status, bring_back_at: it.bring_back_at || null, held_since: it.held_since || null, stage: it.stage || null, owner: it.owner };
   const label = choiceLabel(c);
-  if (c.code === "done") {
-    away(it, where, "done", "Done");
+  if (c.code === "done" || c.code === "confirmed_by_owner") {
+    // v4: Done on something Cedric can check (a bill, a booking) is "checking" until it shows up, not closed.
+    const chk = c.code === "done" && checkable(it), word = chk ? "Checking" : c.code === "done" ? "Done" : "Confirmed";
+    away(it, where, chk ? "check" : "done", word, chk ? "I'll confirm when it shows up" : null);
     if (where === "card") closeCard();
-    const o = begin(it.id); o.patch = { ...o.patch, status: "closed" };
+    const o = begin(it.id); o.patch = chk ? { ...o.patch, stage: "checking", status: "waiting_world", owner: "cedric" } : { ...o.patch, status: "closed", ...(c.code === "confirmed_by_owner" ? { stage: "confirmed" } : {}) };
     const ms = (where === "next" ? HOLD_MS + foldMs() : 0) + UNDO_MS;   // Undo stays on the bar for 5 s after the card has gone
     const gh = { item: it, before, where, timer: setTimeout(() => { state.undo.delete(it.id); hideBar(it.id); }, ms) };
-    gh.call = act({ loop_id: it.id, code: "done", label, revision: it.revision });
-    state.undo.set(it.id, gh); showBar("Done: " + shortTitle(it.title), ms, it.id); render();
+    gh.call = act({ loop_id: it.id, code: c.code, label, revision: it.revision });
+    state.undo.set(it.id, gh); showBar(word + ": " + shortTitle(it.title), ms, it.id); render();
     try { gh.result = await gh.call; settle(o); haptic("ok"); }
     catch (e) { clearTimeout(gh.timer); state.undo.delete(it.id); hideBar(it.id); drop(it.id); putBack(it.id, where); render(); toast("Didn't save. Check your connection and try again."); loadTasks(); }
     return;
@@ -794,6 +980,69 @@ async function cancelAction(it, e) {
     if (!(r && r.ok)) { o.hide.delete(e.action_id); toast("Too late to cancel: Cedric already has it."); }
   } catch (x) { settle(o); o.hide.delete(e.action_id); toast("Didn't cancel. Check your connection and try again."); }
   render(); loadTasks();
+}
+// v4: "Wrong info" under the source line: Cedric rechecks (a queued action; the card goes to With Cedric).
+function wrongInfo(it, where) {
+  queueAction(it, { code: "wrong", label: "Wrong info" }, null, where === "next" && state.q.order[0] === it.id ? "next" : "card", "Cedric is rechecking");
+}
+// v4: a yes on a prepared item. Inside the tap: copy, then open (dialer / payment page / drafts). Then the call script
+// goes to his chat, and the tap is recorded (code "handoff"). The card stays up with the fallback until he taps Next.
+function copyText(text) {
+  text = String(text || ""); if (!text) return false; let ok = false;
+  try {
+    const t = document.createElement("textarea"); t.value = text; t.setAttribute("readonly", ""); t.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0";
+    document.body.append(t); t.select(); t.setSelectionRange(0, text.length); ok = document.execCommand("copy"); t.remove();
+  } catch (e) {}
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).catch(() => {}); ok = true; } } catch (e) {}
+  return ok;
+}
+const telHref = p => "tel:" + String(p || "").replace(/[^\d+]/g, "");
+function openTarget(url) {
+  try {
+    if (/^tel:\+?\d/i.test(url || "")) { const a = el("a", { href: url, style: "display:none" }); document.body.append(a); a.click(); a.remove(); return true; }   // Telegram's openLink takes only http(s)
+    if (/^https:\/\//i.test(url || "")) { if (tg && tg.openLink) tg.openLink(url); else window.open(url, "_blank", "noopener"); return true; }
+  } catch (e) {}
+  return false;
+}
+function handoff(it, c, where) {
+  const x = handoffOf(it);
+  if (x.kind === "make") return openMadeFor(it, c, where, x);
+  const copied = x.copy ? copyText(x.copy) : false;
+  openTarget(x.kind === "call" ? telHref(x.phone) : x.kind === "email" ? (x.open_url || x.url) : x.url);
+  haptic();
+  if (where === "card") closeCard();
+  leaveQueue(it.id); state.details.delete(it.id); state.q.gone = null;
+  const label = choiceLabel(c);
+  const h = { item: it, handoff: x, copied, script: null, err: false, checking: (x.kind === "pay" || x.kind === "call") && checkable(it),
+    temp: { action_id: null, code: "handoff", label, note: null, status: "queued", answer: null, created_at: new Date(nowMs()).toISOString(), _temp: true },
+    p_action: { client_id: newId(), loop_id: it.id, code: "handoff", label, choice: c.code, revision: it.revision } };
+  state.hand = h; state.view = "next";
+  if (x.kind === "call") rpc("cedric_screen_script", { p_loop: it.id }).then(r => { h.script = r && r.ok === false ? "no" : "sent"; render("tasks"); }).catch(() => { h.script = "no"; });
+  recordHandoff(h);
+  $("#pane-tasks").scrollTop = 0;
+}
+function markHand(h) {
+  const o = begin(h.item.id); h.o = o;
+  if (!o.add.includes(h.temp)) o.add.push(h.temp);
+  if (h.checking) o.patch = { ...o.patch, stage: "checking", status: "waiting_world", owner: "cedric" };
+}
+async function recordHandoff(h) {
+  h.err = false; markHand(h); render();
+  try {
+    const r = await sendAct(h.p_action);
+    h.temp.action_id = r && r.action_id; h.temp.status = (r && r.status) || "queued";
+    if (r && r.loop && r.loop.stage) { h.checking = r.loop.stage === "checking"; if (h.checking) h.o.patch = { ...h.o.patch, stage: "checking", status: "waiting_world", owner: "cedric" }; }
+    settle(h.o); haptic("ok");
+  } catch (e) { settle(h.o); h.o.add = h.o.add.filter(x => x !== h.temp); h.err = true; }
+  render(); loadTasks();
+}
+function closeHand() { state.hand = null; boundary(); haptic(); render("tasks"); slotIntoView(); }
+// The weekly review ask points to its Make card: the yes opens it.
+function openMadeFor(it, c, where, x) {
+  const ms = state.make || [];
+  const m = ms.find(m => (x.id && m.id === x.id) || (x.made_id && m.id === x.made_id) || (x.slug && m.slug === x.slug)) || ms.find(m => m.kind === "review" || /^your week/i.test(m.title || ""));
+  queueAction(it, { code: "handoff", label: choiceLabel(c), choice: c.code }, null, where, "Opened");
+  if (m) openReader(m); else { closeCard(); showPane("make", true); }
 }
 function retry(it, e, where) { queueAction(it, { code: e.code, label: e.label, note: e.note }, null, where === "next" && state.q.order[0] === it.id ? "next" : "card"); }
 async function togglePin(m) {
@@ -893,7 +1142,7 @@ let loadingTasks = false;
 async function loadTasks() {
   if (!INIT || loadingTasks) return; loadingTasks = true; const t0 = ++state.clock;
   try {
-    const t = await rpc("cedric_screen_tasks_v3", {}); takeTasks(t, t0); state.error = null;
+    const t = await rpc("cedric_screen_tasks_v4", {}); takeTasks(t, t0); state.error = null;
     const { generated_at, ...rest } = t || {}; const sig = JSON.stringify(rest) + "|" + state.over.size + "|" + state.undo.size + "|" + state.exits.size + "|" + anyOffline();
     if (sig !== state.sig) { state.sig = sig; render(); }
   } catch (e) { if (!state.tasks) { state.error = errText(e); render(); } }
@@ -904,7 +1153,7 @@ async function load(manual) {
   if (!INIT) { state.error = "Open this from Cedric's chat in Telegram."; render(); return; }
   const t0 = ++state.clock;
   try {
-    const [t, m] = await Promise.all([rpc("cedric_screen_tasks_v3", {}), rpc("cedric_screen_make", {})]);
+    const [t, m] = await Promise.all([rpc("cedric_screen_tasks_v4", {}), rpc("cedric_screen_make", {})]);
     takeTasks(t, t0); state.make = m; state.error = null; state.sig = ""; render(); if (manual) toast("Up to date.");
   } catch (e) { state.error = errText(e); render(); }
 }
