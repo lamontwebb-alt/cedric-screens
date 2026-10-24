@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<!--
+Cedric's screens: Tasks and Make, a Telegram Mini App. Spec: Cedric/SPEC-miniapp-v0.md. Look: sketch B v2.
+This page holds no data. Everything comes from Supabase functions that first check Telegram's signed launch data
+(only Lamont, only from Cedric's bot, under 24 hours old). Published to GitHub Pages by screens/publish.sh.
+All text from mail and documents is inserted as text, never as HTML.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cedric</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --page:#F5F6F3; --card:#FFFFFF; --line:#E1E3DE; --ink:#16212C; --soft:#55606C; --faint:#8A939C;
+    --navy:#1E3550; --navy-tint:#E8EDF3; --on-navy:#FFFFFF; --brass:#A9874F; --inset:#F1F3F0; --dim:rgba(14,22,30,.45); --bar:#FBFBF9;
+  }
+  :root.dark{
+    --page:#0F151C; --card:#18212B; --line:#26313D; --ink:#E9ECEF; --soft:#9AA6B2; --faint:#6F7B87;
+    --navy:#B9CBE0; --navy-tint:#22303F; --on-navy:#0F151C; --brass:#8E7546; --inset:#121A23; --dim:rgba(0,0,0,.55); --bar:#141C25;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--page);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  main{padding:10px 18px 110px}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px}
+  .who{display:flex;align-items:center;gap:10px}
+  .mono{width:34px;height:34px;border-radius:9px;background:var(--navy);color:var(--on-navy);display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 18px/1 Georgia,"Times New Roman",serif}
+  .mono i{display:block;width:14px;height:2px;background:var(--brass);margin-top:3px;border-radius:1px}
+  .who b{font-size:17px;font-weight:600}
+  .who span{display:block;font-size:13px;color:var(--soft);margin-top:1px}
+  .right{display:flex;align-items:center;gap:12px}
+  .sw{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--soft)}
+  .track{width:42px;height:25px;border-radius:13px;background:var(--line);position:relative;flex:none;transition:background .15s}
+  .track::after{content:"";position:absolute;top:2.5px;left:2.5px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s}
+  .sw.on{color:var(--navy)} .sw.on .track{background:var(--navy)} .sw.on .track::after{left:19.5px}
+  .refresh{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--soft)}
+  h1{font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-.01em;margin:4px 0 16px}
+  h1 .q{color:var(--soft);font-weight:500}
+  .glabel{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin:18px 0 10px}
+  .mark{width:11px;height:11px;border-radius:50%;flex:none}
+  .m-need{background:var(--navy)} .m-work{border:2px solid var(--navy);background:linear-gradient(90deg,var(--navy) 50%,transparent 50%)} .m-wait{border:2px solid var(--faint)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px 16px 12px;margin-bottom:8px}
+  .thead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .t-title{font-size:18px;line-height:1.3;font-weight:600}
+  .chev{flex:none;margin-top:3px;color:var(--faint);transition:transform .15s}
+  .open .chev{transform:rotate(180deg);color:var(--navy)}
+  .t-detail{font-size:15.5px;line-height:1.4;color:var(--soft);margin-top:4px;display:flex;align-items:baseline;gap:8px}
+  .t-detail .txt{flex:1;min-width:0}
+  :not(.open) > .t-detail .txt{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .tag{font-size:12.5px;font-weight:600;color:var(--navy);background:var(--navy-tint);border-radius:6px;padding:2px 7px;white-space:nowrap}
+  .actions{display:flex;align-items:center;justify-content:space-between;margin-top:9px;gap:10px}
+  .quiet{font-size:16px;font-weight:600;color:var(--soft);padding:10px 4px}
+  .go{font-size:16.5px;font-weight:600;color:var(--on-navy);background:var(--navy);border-radius:12px;min-height:44px;padding:0 20px;display:flex;align-items:center;gap:8px}
+  .note{display:inline-flex;align-items:center;gap:6px;font-size:14.5px;font-weight:600;color:var(--navy);margin-top:2px;padding:6px 0}
+  .queued{font-size:15px;color:var(--soft);margin-top:10px;font-weight:500}
+  .more{background:var(--inset);border-radius:12px;padding:11px 13px;margin-top:10px;font-size:15px;line-height:1.42;white-space:pre-wrap;word-wrap:break-word}
+  .more .h{color:var(--soft);font-size:14px;white-space:normal} .more .h b{color:var(--ink);font-weight:600}
+  .more .body{margin-top:7px;padding-top:7px;border-top:1px solid var(--line)}
+  .more .kv{display:flex;justify-content:space-between;gap:12px;padding:2px 0;white-space:normal} .more .kv span{color:var(--soft)}
+  .link{display:inline-block;margin-top:8px;font-size:14.5px;font-weight:600;color:var(--navy)}
+  .list{background:var(--card);border:1px solid var(--line);border-radius:18px}
+  .row{padding:11px 16px;border-top:1px solid var(--line)} .row:first-child{border-top:0}
+  .row .t-title{font-size:17px} .row .t-detail{font-size:15px;margin-top:3px}
+  .row .actions{margin-top:2px;justify-content:flex-start}
+  .empty{font-size:17px;color:var(--soft);padding:24px 2px}
+  .mk{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:8px}
+  .mk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .mk-title{font-size:18px;font-weight:600;line-height:1.3}
+  .mk-sub{font-size:14.5px;color:var(--soft);margin-top:2px}
+  .first{font-size:15px;color:var(--soft);margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .pin{flex:none;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:-6px -8px 0 0;color:var(--faint)}
+  .pin.on{background:var(--navy-tint);color:var(--navy)}
+  .nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-top:10px}
+  .nums div{background:var(--inset);border-radius:10px;padding:7px 10px}
+  .nums span{display:block;font-size:13.5px;color:var(--soft)}
+  .nums b{display:block;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px}
+  .nums small{display:block;font-size:12.5px;color:var(--faint)}
+  .tabs{position:fixed;left:0;right:0;bottom:0;height:calc(70px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--bar);border-top:1px solid var(--line);display:flex;padding-left:18px;padding-right:18px;z-index:3}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13.5px;font-weight:600;color:var(--faint);position:relative}
+  .tab.on{color:var(--navy)} .tab.on::before{content:"";position:absolute;top:-1px;width:34px;height:3px;border-radius:0 0 3px 3px;background:var(--navy)}
+  .dimmer{position:fixed;inset:0;background:var(--dim);z-index:5;display:none}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-radius:26px 26px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(10,20,30,.18);display:none}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+  .sh-k{font-size:14px;font-weight:600;color:var(--soft)} .sh-t{font-size:19px;font-weight:600;margin-top:2px;line-height:1.3}
+  textarea{width:100%;margin-top:12px;border:1.5px solid var(--navy);border-radius:14px;padding:12px 14px;min-height:110px;font:inherit;font-size:17px;line-height:1.45;color:var(--ink);background:var(--card);resize:vertical}
+  .sh-help{font-size:14px;color:var(--soft);margin-top:10px}
+  .sh-act{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+  .reader{position:fixed;inset:0;z-index:7;background:var(--page);overflow:auto;display:none;padding:12px 20px 40px}
+  .reader .back{font-size:16px;font-weight:600;color:var(--navy);padding:8px 0}
+  .reader h2{font-size:24px;line-height:1.25;margin:8px 0 4px} .reader .mk-sub{margin-bottom:14px}
+  .md{font-size:17px;line-height:1.55} .md h3,.md h4{font-size:18px;margin:16px 0 6px} .md p{margin:8px 0} .md ul,.md ol{margin:8px 0 8px 22px}
+  .md table{border-collapse:collapse;width:100%;font-size:15px;margin:10px 0} .md td,.md th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--ink);color:var(--page);padding:10px 16px;border-radius:12px;font-size:15px;z-index:8;display:none;max-width:90%}
+  .msg{font-size:17px;color:var(--soft);padding:40px 4px;line-height:1.5}
+</style>
+</head>
+<body>
+<main id="main"><div class="msg">Loading…</div></main>
+
+<nav class="tabs">
+  <button class="tab" data-tab="chat"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/></svg>Chat</button>
+  <button class="tab" data-tab="tasks"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2 2 3.5-4M4 15l2 2 3.5-4"/><path d="M13 7.5h9M13 15.5h9M4.5 21.5h17.5"/></svg>Tasks</button>
+  <button class="tab" data-tab="make"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="4" width="18" height="18" rx="3"/><path d="M8 17l3.5-4 3 2.5L18 10" stroke-linecap="round"/></svg>Make</button>
+</nav>
+
+<div class="dimmer" id="dimmer"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="sh-k">Note to Cedric about:</div>
+  <div class="sh-t" id="sheetTitle"></div>
+  <textarea id="noteText" placeholder="Tell Cedric more. The microphone on your keyboard works too."></textarea>
+  <div class="sh-help">Cedric reads it and answers in the chat. A note is never a yes to send or pay.</div>
+  <div class="sh-act"><button class="quiet" id="noteCancel">Cancel</button><button class="go" id="noteSend">Send to Cedric</button></div>
+</div>
+<div class="reader" id="reader"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const CONFIG = { url: "https://aeneuhxfhlygzanmztgg.supabase.co", key: "sb_publishable_oIjULBUKHtL16NFY1iD9Xg_Q-c7X9iP" };
+const tg = window.Telegram && window.Telegram.WebApp;
+const INIT = tg ? tg.initData : "";
+const state = { tab: localStorage.getItem("cedric.tab") || "tasks", tasks: null, make: null, open: new Set(),
+  detail: { tasks: localStorage.getItem("cedric.detail.tasks") === "1", make: localStorage.getItem("cedric.detail.make") === "1" },
+  noteFor: null };
+const SOURCE = { gmail: "Gmail", calendar: "Calendar", ticktick: "TickTick", tiller: "Bank", bank: "Bank", chat: "Chat", campaign: "Plan", health: "Health", cedric: "Cedric" };
+const $ = (s, r) => (r || document).querySelector(s);
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return e;
+}
+function svg(html) { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
+const ICON = {
+  chev: '<svg class="chev" width="20" height="20" viewBox="0 0 20 20"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  pen: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M10.5 2.5l3 3L6 13H3v-3z"/><path d="M9 4l3 3"/></svg>',
+  pin: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M7 2.5h6l-1 5 3 3v1.5H5V10.5l3-3z"/><path d="M10 12v6" stroke-linecap="round"/></svg>',
+  pinOn: '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 2.5h6l-1 5 3 3v1.5H5V10.5l3-3z" fill="currentColor"/><path d="M10 12v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  refresh: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a6 6 0 1 1-1.8-4.3"/><path d="M16 3.5v3.5h-3.5"/></svg>'
+};
+
+async function rpc(fn, args) {
+  const r = await fetch(CONFIG.url + "/rest/v1/rpc/" + fn, { method: "POST",
+    headers: { "Content-Type": "application/json", apikey: CONFIG.key, ...(CONFIG.key.startsWith("eyJ") ? { Authorization: "Bearer " + CONFIG.key } : {}) },
+    body: JSON.stringify({ p_init: INIT, ...args }) });
+  if (!r.ok) { const t = await r.text(); throw new Error(r.status === 403 || /not allowed/.test(t) ? "not-allowed" : "HTTP " + r.status); }
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = "none", 3200); }
+function haptic(kind) { try { tg && tg.HapticFeedback && (kind === "ok" ? tg.HapticFeedback.notificationOccurred("success") : tg.HapticFeedback.impactOccurred("light")); } catch (e) {} }
+function when(iso) {
+  if (!iso) return ""; const d = new Date(iso), now = new Date(), day = 864e5;
+  const days = Math.round((new Date(d.toDateString()) - new Date(now.toDateString())) / day);
+  const t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (days === 0) return "today " + t; if (days === 1) return "tomorrow"; if (days === -1) return "yesterday";
+  if (days > 1 && days < 7) return d.toLocaleDateString([], { weekday: "short" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+function plural(n, one, many) { return n + " " + (n === 1 ? one : many); }
+
+function header(sub, which) {
+  const sw = el("button", { class: "sw" + (state.detail[which] ? " on" : ""), onclick: () => {
+    state.detail[which] = !state.detail[which]; localStorage.setItem("cedric.detail." + which, state.detail[which] ? "1" : "0"); haptic(); render(); } },
+    "Detail", el("span", { class: "track" }));
+  const rf = el("button", { class: "refresh", "aria-label": "Refresh", onclick: () => load(true) }, svg(ICON.refresh));
+  return el("div", { class: "top" },
+    el("div", { class: "who" }, el("div", { class: "mono" }, "C", el("i")), el("div", {}, el("b", {}, "Cedric"), el("span", {}, sub))),
+    el("div", { class: "right" }, sw, rf));
+}
+
+function moreBox(p, link) {
+  if (!p && !link) return null;
+  const box = el("div", { class: "more" });
+  if (p && p.draft) {
+    if (p.draft.to) box.append(el("div", { class: "h" }, "To: ", el("b", {}, p.draft.to)));
+    if (p.draft.subject) box.append(el("div", { class: "h" }, "Subject: ", el("b", {}, p.draft.subject)));
+    if (p.draft.body) box.append(el("div", { class: "body" }, p.draft.body));
+  }
+  if (p && Array.isArray(p.lines)) for (const l of p.lines) box.append(el("div", { class: "kv" }, el("span", {}, l.label), el("b", {}, l.value)));
+  if (p && p.text) box.append(el("div", {}, p.text));
+  if (link && /^https:\/\//.test(link)) box.append(el("button", { class: "link", onclick: () => tg ? tg.openLink(link) : window.open(link) }, "Open the original"));
+  return box.childNodes.length ? box : null;
+}
+
+function taskCard(it) {
+  const open = state.detail.tasks || state.open.has(it.id);
+  const choices = Array.isArray(it.choices) && it.choices.length ? it.choices : [{ code: "later", label: "Later" }, { code: "done", label: "Done", primary: true }];
+  const primary = choices.find(c => c.primary) || choices[choices.length - 1];
+  const others = choices.filter(c => c !== primary);
+  const needsReview = it.preview && it.preview.draft && !open;
+  const card = el("div", { class: "card" + (open ? " open" : "") });
+  const head = el("div", { class: "thead", onclick: () => { state.open.has(it.id) ? state.open.delete(it.id) : state.open.add(it.id); render(); } },
+    el("div", { class: "t-title" }, it.title), svg(ICON.chev));
+  card.append(head, el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, it.detail || (it.due ? "Due " + when(it.due) : ""))));
+  if (open) { const m = moreBox(it.preview, it.source_link); if (m) card.append(m); }
+  if (it.queued) { card.append(el("div", { class: "queued" }, "Sent to Cedric. He'll confirm in the chat.")); return card; }
+  const acts = el("div", { class: "actions" },
+    el("div", {}, ...others.map(c => el("button", { class: "quiet", onclick: () => tap(it, c) }, c.label))),
+    el("button", { class: "go", onclick: () => needsReview ? (state.open.add(it.id), render()) : tap(it, primary) }, needsReview ? "Review" : primary.label));
+  card.append(acts, el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), "Add a note"));
+  return card;
+}
+function rowItem(it, kind) {
+  const open = state.detail.tasks || state.open.has(it.id);
+  const sub = kind === "wait" ? (it.held_since ? "Held since " + when(it.held_since) + ". " : "") + (it.detail || "") : (it.detail || "");
+  const row = el("div", { class: "row" + (open ? " open" : "") },
+    el("div", { class: "thead", onclick: () => { state.open.has(it.id) ? state.open.delete(it.id) : state.open.add(it.id); render(); } }, el("div", { class: "t-title" }, it.title), svg(ICON.chev)),
+    el("div", { class: "t-detail" }, el("span", { class: "tag" }, SOURCE[it.source_kind] || it.source_kind), el("span", { class: "txt" }, sub)));
+  if (open) { const m = moreBox(it.preview, it.source_link); if (m) row.append(m); }
+  if (it.queued) row.append(el("div", { class: "queued" }, "Sent to Cedric."));
+  else if (kind === "wait" && open) row.append(el("div", { class: "actions" }, el("button", { class: "quiet", onclick: () => tap(it, { code: "unhold", label: "Bring it back now" }) }, "Bring it back now"), el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), "Add a note")));
+  else if (open) row.append(el("button", { class: "note", onclick: () => openNote(it) }, svg(ICON.pen), "Add a note"));
+  return row;
+}
+
+function renderTasks(main) {
+  const d = state.tasks; const n = d.needs.length, w = d.working.length, h = d.wait.length;
+  const now = new Date(); const part = now.getHours() < 12 ? "morning" : now.getHours() < 17 ? "afternoon" : "evening";
+  main.append(header(now.toLocaleDateString([], { weekday: "long" }) + " " + part, "tasks"));
+  const rest = [w ? plural(w, "thing", "things").replace(/thing(s?)$/, "I'm working on") : "", h ? h + " can wait" : ""].filter(Boolean).join(", ");
+  main.append(n ? el("h1", {}, plural(n, "thing needs you.", "things need you.") + " ", el("span", { class: "q" }, rest ? rest.charAt(0).toUpperCase() + rest.slice(1) + "." : ""))
+                : el("h1", {}, "Nothing needs you. ", el("span", { class: "q" }, rest ? rest.charAt(0).toUpperCase() + rest.slice(1) + "." : "")));
+  if (n) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-need" }), "Needs you")); d.needs.forEach(it => main.append(taskCard(it))); }
+  if (w) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-work" }), "Working on it"), el("div", { class: "list" }, d.working.map(it => rowItem(it, "work")))); }
+  if (h) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-wait" }), "Can wait"), el("div", { class: "list" }, d.wait.map(it => rowItem(it, "wait")))); }
+}
+
+function makeCard(m) {
+  const p = m.preview || {}; const rich = state.detail.make;
+  const pin = el("button", { class: "pin" + (m.pinned ? " on" : ""), "aria-label": m.pinned ? "Unpin" : "Pin", onclick: (e) => { e.stopPropagation(); togglePin(m); } }, svg(m.pinned ? ICON.pinOn : ICON.pin));
+  const card = el("div", { class: "mk", onclick: () => openReader(m) },
+    el("div", { class: "mk-head" }, el("div", { style: "min-width:0" }, el("div", { class: "mk-title" }, m.title), el("div", { class: "mk-sub" }, "Updated " + when(m.updated_at))), pin));
+  if (p.line) card.append(el("div", { class: "first" }, p.line));
+  if (rich && Array.isArray(p.numbers) && p.numbers.length) card.append(el("div", { class: "nums" }, p.numbers.slice(0, 6).map(x => el("div", {}, el("span", {}, x.label), el("b", {}, x.value), x.note ? el("small", {}, x.note) : null))));
+  return card;
+}
+function renderMake(main) {
+  main.append(header("Finished work", "make"));
+  const items = state.make || [];
+  main.append(el("h1", {}, "Things I made for you. ", el("span", { class: "q" }, items.some(m => m.pinned) ? "Pinned ones stay on top." : "")));
+  if (!items.length) { main.append(el("div", { class: "empty" }, "Nothing yet. Tonight's overview lands here after the 9 PM brief.")); return; }
+  const pinned = items.filter(m => m.pinned), rest = items.filter(m => !m.pinned);
+  if (pinned.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-need" }), "Pinned")); pinned.forEach(m => main.append(makeCard(m))); }
+  if (rest.length) { main.append(el("div", { class: "glabel" }, el("span", { class: "mark m-wait" }), "Newest first")); rest.forEach(m => main.append(makeCard(m))); }
+}
+
+// Small, safe markdown: text is escaped first; only headings, lists, bold, italics, tables and paragraphs.
+function md(src) {
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\W)\*(.+?)\*(?=\W|$)/g, "$1<i>$2</i>");
+  const out = []; const lines = (src || "").replace(/\r/g, "").split("\n"); let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^\s*$/.test(l)) { i++; continue; }
+    let h = l.match(/^(#{1,4})\s+(.*)/); if (h) { out.push("<h3>" + inline(h[2]) + "</h3>"); i++; continue; }
+    if (/^\s*\|/.test(l)) { const rows = []; while (i < lines.length && /^\s*\|/.test(lines[i])) { if (!/^\s*\|[\s:|-]+\|\s*$/.test(lines[i])) rows.push(lines[i].trim().replace(/^\||\|$/g, "").split("|").map(c => "<td>" + inline(c.trim()) + "</td>").join("")); i++; }
+      out.push("<table>" + rows.map(r => "<tr>" + r + "</tr>").join("") + "</table>"); continue; }
+    if (/^\s*([-*]|\d+\.)\s+/.test(l)) { const ord = /^\s*\d+\./.test(l); const it = []; while (i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i])) { it.push("<li>" + inline(lines[i].replace(/^\s*([-*]|\d+\.)\s+/, "")) + "</li>"); i++; }
+      out.push((ord ? "<ol>" : "<ul>") + it.join("") + (ord ? "</ol>" : "</ul>")); continue; }
+    const para = []; while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,4})\s|^\s*\||^\s*([-*]|\d+\.)\s+/.test(lines[i])) { para.push(inline(lines[i])); i++; }
+    out.push("<p>" + para.join("<br>") + "</p>");
+  }
+  return out.join("");
+}
+function openReader(m) {
+  const r = $("#reader"); r.replaceChildren(
+    el("button", { class: "back", onclick: closeReader }, "‹ Back"),
+    el("h2", {}, m.title), el("div", { class: "mk-sub" }, "Updated " + when(m.updated_at)));
+  const p = m.preview || {};
+  if (Array.isArray(p.numbers) && p.numbers.length) r.append(el("div", { class: "nums" }, p.numbers.map(x => el("div", {}, el("span", {}, x.label), el("b", {}, x.value), x.note ? el("small", {}, x.note) : null))));
+  const body = el("div", { class: "md" }); body.innerHTML = md(m.body || p.line || ""); r.append(body);
+  r.style.display = "block"; r.scrollTop = 0; tg && tg.BackButton && tg.BackButton.show();
+}
+function closeReader() { $("#reader").style.display = "none"; tg && tg.BackButton && tg.BackButton.hide(); }
+
+function openNote(it) { state.noteFor = it; $("#sheetTitle").textContent = it.title; $("#noteText").value = ""; $("#dimmer").style.display = "block"; $("#sheet").style.display = "block"; setTimeout(() => $("#noteText").focus(), 50); }
+function closeNote() { state.noteFor = null; $("#dimmer").style.display = "none"; $("#sheet").style.display = "none"; }
+$("#noteCancel").onclick = closeNote; $("#dimmer").onclick = closeNote;
+$("#noteSend").onclick = async () => {
+  const text = $("#noteText").value.trim(); const it = state.noteFor; if (!text || !it) return;
+  try { await rpc("cedric_screen_tap", { p_loop: it.id, p_code: "note", p_label: "Note", p_note: text }); closeNote(); haptic("ok"); toast("Sent to Cedric. He'll answer in the chat."); load(); }
+  catch (e) { toast("Didn't send. Check your connection and try again."); }
+};
+async function tap(it, c) {
+  haptic();
+  try { await rpc("cedric_screen_tap", { p_loop: it.id, p_code: c.code, p_label: c.label }); it.queued = true; render(); haptic("ok"); toast(c.label + ": sent to Cedric."); }
+  catch (e) { toast("Didn't send. Check your connection and try again."); }
+}
+async function togglePin(m) {
+  m.pinned = !m.pinned; render();
+  try { await rpc("cedric_screen_pin", { p_id: m.id, p_pinned: m.pinned }); } catch (e) { m.pinned = !m.pinned; render(); toast("Couldn't change the pin."); }
+}
+
+function render() {
+  const main = $("#main"); main.replaceChildren();
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.tab === state.tab));
+  if (state.error) { main.append(el("div", { class: "msg" }, state.error)); return; }
+  if (state.tab === "tasks") { if (state.tasks) renderTasks(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
+  else { if (state.make) renderMake(main); else main.append(el("div", { class: "msg" }, "Loading…")); }
+}
+async function load(manual) {
+  if (!INIT) { state.error = "Open this from Cedric's chat in Telegram."; render(); return; }
+  try {
+    const [t, m] = await Promise.all([rpc("cedric_screen_tasks", {}), rpc("cedric_screen_make", {})]);
+    state.tasks = t; state.make = m; state.error = null; render(); if (manual) toast("Up to date.");
+  } catch (e) {
+    state.error = e.message === "not-allowed" ? "This only opens for Cedric's owner, from Cedric's chat. Close it and open it again from the chat." : "Couldn't reach Cedric's database. Pull down or tap refresh to try again.";
+    render();
+  }
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  const k = t.dataset.tab; haptic();
+  if (k === "chat") { tg ? tg.close() : null; return; }
+  state.tab = k; localStorage.setItem("cedric.tab", k); closeReader(); render(); window.scrollTo(0, 0);
+}));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+if (tg) {
+  tg.ready(); tg.expand();
+  const applyTheme = () => document.documentElement.classList.toggle("dark", tg.colorScheme === "dark");
+  applyTheme(); tg.onEvent("themeChanged", applyTheme);
+  try { tg.setHeaderColor("bg_color"); } catch (e) {}
+  tg.BackButton && tg.BackButton.onClick(closeReader);
+}
+render(); load();
+</script>
+</body>
+</html>
