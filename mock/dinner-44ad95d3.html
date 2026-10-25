@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dinner for two</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* Cedric report card, mockup v1 (2026-10-25). Direction carried from the screens Lamont picked 2026-10-24 (sketch B):
+   navy actions, a brass mark reserved for Cedric's pick. Three radii only: 14 card, 10 control/photo, 6 small mark. */
+:root{
+  --page:#0F151C; --card:#18212B; --raise:#1E2833; --line:#26313D; --ink:#E9ECEF; --soft:#9AA6B2; --faint:#6F7B87;
+  --navy:#B9CBE0; --navy-tint:#22303F; --on-navy:#0F151C; --pick:#CDAE76; --pick-tint:#2A2418;
+  --ok:#74C594; --warn:#C9A86E; --no:#D98C8C;
+  --r-card:14px; --r-ctl:10px; --r-mark:6px;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--page);color:var(--ink);font:16px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:480px;margin:0 auto;padding:0 16px 120px}
+
+.top{position:sticky;top:0;z-index:5;background:var(--page);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+.top .back{color:var(--navy);font-weight:600;font-size:15px;min-height:44px;display:flex;align-items:center}
+.top .ttl{font-weight:600;font-size:15px;color:var(--soft)}
+.top .share{color:var(--navy);font-weight:600;font-size:15px;min-height:44px;display:flex;align-items:center}
+
+.head{padding:22px 0 6px}
+.head h1{font:600 29px/1.15 var(--serif);letter-spacing:-.01em}
+.head .ask{color:var(--soft);font-size:15px;margin-top:8px}
+.head .ask b{color:var(--ink);font-weight:600}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-ctl);padding:4px;margin:18px 0 6px}
+.seg button{min-height:48px;border-radius:var(--r-mark);font-weight:600;font-size:15px;color:var(--soft);line-height:1.2}
+.seg button small{display:block;font-weight:500;font-size:12.5px;color:var(--faint);margin-top:2px}
+.seg button[aria-pressed=true]{background:var(--raise);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.seg button[aria-pressed=true] small{color:var(--soft)}
+.basis{font-size:13px;color:var(--faint);margin:2px 2px 16px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;margin-bottom:12px}
+.card.pick{border-color:#4A3F2A}
+.photos{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:2px;background:#0B1016}
+.photos{position:relative}.photos img{flex:0 0 100%;min-width:100%;width:100%;aspect-ratio:16/9;object-fit:cover;scroll-snap-align:start;display:block}
+.photos.none{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:13px}
+.body{padding:16px}
+.mark{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--pick);background:var(--pick-tint);border-radius:var(--r-mark);padding:3px 8px;margin-bottom:10px}
+.name{font:600 23px/1.2 var(--serif)}
+.sub{color:var(--soft);font-size:14.5px;margin-top:3px}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin:14px 0 4px}
+.fact .v{font-size:19px;font-weight:650}
+.fact .k{font-size:13px;color:var(--soft);margin-top:1px}
+.fact .v.small{font-size:16px}
+.state{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-top:12px;color:var(--ink)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.no{background:var(--no)}
+.quote{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin-top:14px;font:italic 16px/1.45 var(--serif);color:var(--ink)}
+.quote cite{display:block;font:normal 12.5px/1.4 var(--sans);color:var(--faint);margin-top:4px}
+.why{font-size:15px;margin-top:14px;color:var(--ink)}
+.why span{color:var(--soft)}
+.acts{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:16px}
+.primary{min-height:50px;border-radius:var(--r-ctl);background:var(--navy);color:var(--on-navy);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0 14px;text-align:center}
+.secondary{min-height:50px;min-width:64px;border-radius:var(--r-ctl);background:var(--navy-tint);color:var(--navy);font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0 14px}
+.more{display:block;width:100%;text-align:left;color:var(--navy);font-weight:600;font-size:14.5px;padding:12px 0 0;min-height:44px}
+.detail{display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:14.5px;color:var(--soft)}
+.detail.open{display:block}
+.detail dl{display:grid;grid-template-columns:96px 1fr;gap:8px 10px}
+.detail dt{color:var(--faint)}.detail dd{color:var(--ink)}
+.detail .src{font-size:12.5px;color:var(--faint);margin-top:10px}
+
+.section{display:flex;align-items:baseline;justify-content:space-between;margin:26px 2px 10px}
+.section h2{font:600 19px/1.2 var(--serif)}
+.section button{color:var(--navy);font-weight:600;font-size:14.5px;min-height:44px}
+
+.row{display:grid;grid-template-columns:76px 1fr;gap:12px;align-items:center;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);margin-bottom:8px;width:100%;text-align:left}
+.row img,.row .ph{width:76px;height:76px;border-radius:var(--r-ctl);object-fit:cover;background:#0B1016}
+.row .n{font:600 17px/1.25 var(--serif)}
+.row .m{font-size:13.5px;color:var(--soft);margin-top:3px}
+.row .s{font-size:13px;margin-top:5px;display:flex;align-items:center;gap:6px}
+.row.closed{opacity:.55}
+.expanded{margin-bottom:8px}
+
+.foot{margin-top:26px;border-top:1px solid var(--line);padding-top:16px}
+.foot .primary{width:100%}
+.askbar{display:flex;gap:8px;margin-top:12px}
+.askbar input{flex:1;min-height:48px;border-radius:var(--r-ctl);border:1px solid var(--line);background:var(--card);color:var(--ink);padding:0 14px;font:15px var(--sans)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chips button{min-height:40px;border-radius:var(--r-ctl);border:1px solid var(--line);color:var(--soft);font-size:14px;padding:0 12px}
+.links{display:flex;justify-content:space-between;margin-top:18px}
+.links button{color:var(--navy);font-weight:600;font-size:14.5px;min-height:44px}
+.checked{font-size:12.5px;color:var(--faint);margin-top:6px}
+
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:20}
+.sheet.open{display:block}
+.panel{position:absolute;left:0;right:0;bottom:0;max-height:86vh;overflow:auto;background:var(--card);border-radius:var(--r-card) var(--r-card) 0 0;padding:18px 16px 32px;border-top:1px solid var(--line)}
+.panel h3{font:600 20px/1.2 var(--serif);margin-bottom:12px}
+.panel .close{float:right;color:var(--navy);font-weight:600;min-height:44px}
+table.cmp{width:100%;border-collapse:collapse;font-size:13.5px}
+table.cmp th,table.cmp td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.cmp th{color:var(--faint);font-weight:600;font-size:12.5px}
+table.cmp td.nm{font-weight:600;color:var(--ink)}
+.srcl li{margin:0 0 10px 18px;color:var(--soft);font-size:14px}
+.srcl a{color:var(--navy)}
+.toast{position:fixed;left:16px;right:16px;bottom:24px;background:var(--raise);border:1px solid var(--line);border-radius:var(--r-ctl);padding:14px;font-size:14.5px;display:none;z-index:30}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="top"><a class="back" href="#" onclick="toast('This mockup opens on its own. In Cedric, this goes back to Tasks.');return false">‹ Tasks</a><span class="ttl">Dinner for two</span><button class="share" onclick="share()">Share</button></div>
+<div class="wrap">
+  <div class="head">
+    <h1 id="h1"></h1>
+    <p class="ask">You asked for: <b>good food, under $150 for two, under 45 min</b>, closer unless it's worth it.</p>
+  </div>
+  <div class="seg" role="group" aria-label="Night">
+    <button id="seg-mon" aria-pressed="true" onclick="setNight('mon')">Mon Oct 26<small id="cnt-mon"></small></button>
+    <button id="seg-tue" aria-pressed="false" onclick="setNight('tue')">Tue Oct 27<small id="cnt-tue"></small></button>
+  </div>
+  <p class="basis">Monday is your next night off. Tables aren't held yet; Book opens the restaurant's own page.</p>
+
+  <div id="pick"></div>
+
+  <div class="section"><h2>Other options, closest first</h2><button onclick="openSheet('cmp')">Compare</button></div>
+  <div id="rows"></div>
+
+  <div class="foot">
+    <button class="secondary" style="width:100%" onclick="share()">Send the top 3 to your wife</button>
+    <div class="askbar"><input id="q" placeholder="Ask Cedric about these…" onkeydown="if(event.key==='Enter')ask()"><button class="secondary" onclick="ask()">Ask</button></div>
+    <div class="chips"><button onclick="ask('Which is quietest?')">Quietest?</button><button onclick="ask('Anything closer?')">Closer?</button><button onclick="ask('Which has a patio?')">Patio?</button></div>
+    <div class="links"><button onclick="openSheet('src')">How I found these</button><button onclick="toast('In Cedric, this opens your chat about the dinner.')">Our conversation</button></div>
+    <p class="checked" id="checked"></p>
+  </div>
+</div>
+
+<div class="sheet" id="sh-cmp" onclick="if(event.target===this)closeSheet()"><div class="panel"><button class="close" onclick="closeSheet()">Done</button><h3>Side by side</h3><div id="cmp"></div></div></div>
+<div class="sheet" id="sh-src" onclick="if(event.target===this)closeSheet()"><div class="panel"><button class="close" onclick="closeSheet()">Done</button><h3>How I found these</h3><div id="src"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script id="data" type="application/json">{"restaurants": [{"id": "whistle", "name": "Whistle Post Tavern", "cuisine": "American bar & grill", "neighborhood": "Olde Town Conyers", "address": "935 Railroad St NW, Conyers, GA 30012", "phone": "+17707855008", "website": "https://www.whistleposttavern.com/", "photo_urls": ["https://whistleposttavern.com/wp-content/uploads/2020/05/IMG_8547-scaled.jpg", "https://www.whistleposttavern.com/wp-content/uploads/2024/03/DSC06624.png", "https://www.whistleposttavern.com/wp-content/uploads/2025/10/Reuben-WPT.jpg"], "rating": {"value": 4.2, "count": 1012, "source": "Google", "url": "https://restaurantguru.com/Whistle-Post-Tavern-Conyers", "seen": "Google rating as shown by the Restaurant Guru aggregator ('Google (4.2/5) 1012'; page marked 'Updated 3 months ago'), fetched 2026-10-25. Not read from Google Maps directly. The same page shows Trip 3.5/5 from 56 ratings. Yelp and TripAdvisor returned 403 and could not be opened."}, "review_lines": [{"text": "Very cozy place and the food was amazing (fish sandwich) highly recommended!", "source": "Google", "date_or_age": "10 months ago"}, {"text": "Great birthday party there for our beloved friend's 80th Birthday -- on a Friday night in prime time.", "source": "Google", "date_or_age": "7 months ago"}], "dishes": [{"name": "Country Fried Steak", "price": "$13.99"}, {"name": "Fried Catfish Plate", "price": "$17.99"}, {"name": "Teriyaki Salmon", "price": "$22.99"}], "menu_url": "https://www.whistleposttavern.com/lunch-dinner/", "total_for_two": {"low": 65, "high": 95, "basis": "Prices read from the official menu images dated 09.20.2025 (Entre-09.20.2025.jpg and Lunch-menu-09.20.2025.jpg on the Lunch/Dinner page). Low: 2 x Country Fried Steak $13.99 + Fried Pickles $5.99 + 2 drinks at $8 = $49.97. High: 2 x Teriyaki Salmon or Fried Shrimp Plate $22.99 + Lobster Cakes $11.99 + 2 drinks at $8 = $73.97. Each is then +8% tax and +20% tip on the pre-tax subtotal (x1.28). Drink prices were not found online (the bar specials menu is an image with no listed prices), so $8 is assumed. The site also advertises a '$11 Reuben Sandwich every Tuesday all day long' (official promo image, uploaded 2025-10), which would lower the Tue Oct 27 cost."}, "drive_min": 10, "booking": {"method": "phone", "url": "https://www.whistleposttavern.com/reservation-form/"}, "nights": {"mon": {"open": true, "text": "Open till 10"}, "tue": {"open": true, "text": "Open till 10"}}, "waze_url": "https://waze.com/ul?q=935%20Railroad%20St%20NW%2C%20Conyers%2C%20GA%2030012&navigate=yes", "vibe": ["live music", "patio", "casual", "train theme"], "parking": "Free lot behind the building", "why_it_fits": "The easy night: 10 minutes away, big menu, about $65 to $95 for two.", "main_drawback": "Tavern food more than a special meal; reviews are mixed on service.", "sources": ["https://www.whistleposttavern.com/", "https://www.whistleposttavern.com/lunch-dinner/", "https://www.whistleposttavern.com/wp-content/uploads/2025/09/Entre-09.20.2025.jpg", "https://www.whistleposttavern.com/wp-content/uploads/2025/09/Lunch-menu-09.20.2025.jpg", "https://www.whistleposttavern.com/bar-specials/", "https://www.whistleposttavern.com/reservation-form/"]}, {"id": "celtic", "name": "Celtic Tavern", "cuisine": "Irish pub fare", "neighborhood": "Olde Town Conyers", "address": "918 Commercial St NE, Conyers, GA 30012", "phone": "+14702766633", "website": "https://www.celtictavern.com/", "photo_urls": ["https://www.celtictavern.com/wp-content/uploads/2020/08/celtci.jpg", "https://www.celtictavern.com/wp-content/uploads/2020/12/Burger-Celtic.jpg", "https://www.celtictavern.com/wp-content/uploads/2020/08/DSC00438.jpg"], "rating": {"value": 4.5, "count": 807, "source": "Google", "url": "https://restaurantguru.com/Celtic-Tavern-Conyers", "seen": "Google rating as shown by the Restaurant Guru aggregator ('Google (4.5/5) 807'; page marked 'Updated 3 months ago'), fetched 2026-10-25. Not read from Google Maps directly. The same page shows Trip 4.1/5 from 51 ratings. A search snippet showed Yelp at 3.9 from 98 reviews, but Yelp returned 403 and could not be opened."}, "review_lines": [{"text": "We always love coming here...the neighborhood vibes are great and the staff is incredibly friendly.", "source": "Google", "date_or_age": "7 months ago"}, {"text": "Great food. Server was nice but he could use some help.", "source": "Google", "date_or_age": "6 months ago"}], "dishes": [{"name": "Shepherd's Pie", "price": "$13.25"}, {"name": "Famous Fish and Chips", "price": "$12"}, {"name": "Blackened Cod", "price": "$15"}], "menu_url": "https://www.celtictavern.com/menu/", "total_for_two": {"low": 60, "high": 75, "basis": "Prices come from the iMenuPro menu embedded on celtictavern.com/menu (script https://imenupro.com/!10rf-13). Its publish timestamp is 2024-09-25, so prices may have risen since. Low: 2 x Fish and Chips $12 + Shareable Basket $6 + 2 drinks at $8 = $46. High: Shepherd's Pie $13.25 + Blackened Cod $15 + Celtic Crack Dip $10 + 2 specialty cocktails at $11 (the menu's cocktails run $9-$15) = $60.25. Each is then +8% tax and +20% tip on the pre-tax subtotal (x1.28). Pub sandwiches do not include sides, which cost $3.50-$5 extra. The menu lists a Monday special of '½ priced appetizers' for 'Teacher - First Responders'."}, "drive_min": 10, "booking": {"method": "walk-in", "url": null}, "nights": {"mon": {"open": true, "text": "Open till 11"}, "tue": {"open": true, "text": "Open till 11"}}, "waze_url": "https://waze.com/ul?q=918%20Commercial%20St%20NE%2C%20Conyers%2C%20GA%2030012&navigate=yes", "vibe": ["patio", "Irish pub", "live music", "family until 10pm"], "parking": "Free lot", "why_it_fits": "Cozy Irish pub 10 minutes away, the cheapest good meal here at about $60 to $80.", "main_drawback": "A pub night, not a dressed-up dinner; menu prices online date from 2024.", "sources": ["https://www.celtictavern.com/", "https://www.celtictavern.com/menu/", "https://imenupro.com/!10rf-13", "https://www.celtictavern.com/specialty-drinks/", "https://imenupro.com/!10rf-14", "https://restaurantguru.com/Celtic-Tavern-Conyers"]}, {"id": "mystic", "name": "Mystic Grill", "cuisine": "Southern with a twist", "neighborhood": "Historic Covington Square (downtown Covington)", "address": "1116 Clark St SW, Covington, GA 30014", "phone": "+17707281670", "website": "https://www.mysticgrill.restaurant/", "photo_urls": ["https://popmenucloud.com/cdn-cgi/image/width=1200,height=630,format=auto,fit=cover/swcxgatl/c9139f4e-537b-4423-8fa2-911ef4d315cd", "https://popmenucloud.com/cdn-cgi/image/width=1920,height=1920,format=auto,fit=scale-down/swcxgatl/cf1396e5-8c7d-4b1f-ab72-9d435e37c08e", "https://popmenucloud.com/cdn-cgi/image/width=1920,height=1920,format=auto,fit=scale-down/swcxgatl/230be646-9f8d-4f5b-b7bf-0698792badc7"], "rating": {"value": 4.5, "count": 5942, "source": "Google", "url": "https://restaurantguru.com/Mystic-Grill-Covington-Georgia", "seen": "Google figure as shown on Restaurant Guru ('Google (4.5/5) 5942', page updated Aug 15, 2026). Could not open Google Maps directly. Cross-checks: Tripadvisor 4.4 (~840) and Yelp 3.9 (831, April 2026), both from search-result snippets only. Yelp is noticeably lower."}, "review_lines": [{"text": "We had a great experience at Mystic Grill!", "source": "Google", "date_or_age": "a month ago"}], "dishes": [{"name": "Sweet Tea Fried Chicken", "price": "$15"}, {"name": "Shrimp & Grits", "price": "$18"}, {"name": "13 oz Ribeye", "price": "$28"}], "menu_url": "https://www.mysticgrill.restaurant/menu", "total_for_two": {"low": 55, "high": 115, "basis": "Low: 2x Sweet Tea Fried Chicken ($30) + Fried Green Tomatoes ($7) + 2 iced teas (~$3 each, assumed; no drink prices found) = $43 x 1.28 (8% tax + 20% tip) = ~$55. High: Shrimp & Grits ($18) + Sauteed Grouper ($23) + Baked Brie ($11) + 2 cocktails (~$12 each, assumed) = $76 x 1.28 = ~$97, raised to ~$115 to allow ~20% for the possibly outdated third-party prices. Either way it is well under $150."}, "drive_min": 20, "booking": {"method": "walk-in", "url": "https://www.mysticgrill.restaurant/reservations"}, "nights": {"mon": {"open": true, "text": "Open till 9"}, "tue": {"open": true, "text": "Open till 9"}}, "waze_url": "https://waze.com/ul?q=1116%20Clark%20St%20SW%2C%20Covington%2C%20GA%2030014&navigate=yes", "vibe": ["rooftop", "historic square", "Vampire Diaries fan spot", "casual & lively"], "parking": "Parking on site", "why_it_fits": "The best-reviewed place close to home: 4.5 from almost 6,000 Google reviews, 20 minutes away, on the Covington square.", "main_drawback": "No reservations; go by 6:15 on a weeknight to avoid a wait. Kitchen closes at 9.", "sources": ["https://web.archive.org/web/20260823195120/https://www.mysticgrill.restaurant/", "https://web.archive.org/web/20260919041140/https://www.mysticgrill.restaurant/about", "https://web.archive.org/web/20251014035044/https://www.mysticgrill.restaurant/menu", "https://www.mysticgrill.restaurant/reservations", "https://places.singleplatform.com/mystic-grill-restaurant/menu", "https://www.yelp.com/menu/mystic-grill-restaurant-covington/dinner"]}, {"id": "no246", "name": "No. 246", "cuisine": "Italian pasta & pizza", "neighborhood": "Downtown Decatur (Decatur Square)", "address": "129 E Ponce de Leon Ave, Decatur, GA 30030", "phone": "+16783998246", "website": "https://no246.com/", "photo_urls": ["https://no246.com/wp-content/uploads/2021/08/no246_2021-06_gallery_03.jpg", "https://no246.com/wp-content/uploads/2021/08/no246_new_0020.jpg", "https://no246.com/wp-content/uploads/2021/08/Burrata.jpg"], "rating": {"value": 4.6, "count": 1668, "source": "Google", "url": "https://wanderlog.com/place/details/1163345/no-246", "seen": "Google rating as embedded in Wanderlog's page data ('rating':4.6, 'numRatings':1668, with a ratingDistribution labeled 'Google' that sums to 1668), fetched 2026-10-25. Not read from Google Maps directly. Other figures seen: Restaurantji 4.5 from 1,125 ratings (page updated 2026-10-16). Search snippets showed OpenTable 4.8 from about 4,371 reviews and Yelp 4.2 from about 1.1k, but OpenTable timed out and Yelp/TripAdvisor returned 403, so those could not be opened."}, "review_lines": [{"text": "There are really no bad choices at No. 246, only bad tablemates who won’t support a divide-and-conquer ordering strategy.", "source": "The Infatuation", "date_or_age": "2025"}, {"text": "Love the food here and service is always great.", "source": "Restaurantji", "date_or_age": "date not shown"}], "dishes": [{"name": "Spicy Rigatoni Vodka", "price": "$25"}, {"name": "Shrimp Scampi", "price": "$29"}, {"name": "Garlic Bread, al forno", "price": "$19"}], "menu_url": "https://no246.com/wp-content/uploads/2026/10/261021_Dinner.pdf", "total_for_two": {"low": 120, "high": 145, "basis": "Prices are from the official dinner PDF 261021_Dinner.pdf (dated Oct 21, 2026), linked from no246.com/menus. Low: Spicy Rigatoni Vodka $25 + Agnolotti $25 + Ricotta al Forno $16 + 2 glasses of wine at $14 (Arneis or Corvina) = $94. High: Shrimp Scampi $29 + Tagliatelle Bolognese $29 + Garlic Bread $19 + 2 glasses of wine at $18 (Chardonnay) = $113. Cocktails are $12-$15. Each total is then +8% tax and +20% tip on the pre-tax subtotal (x1.28). Daily specials: Monday Clam Bucatini $28, Tuesday Fettucine Alfredo $30. A pizza (from $17) or a 'side of pasta' ($8) lowers the cost. The red grouper ($42) and the bistecca ($65) would push past $150."}, "drive_min": 40, "booking": {"method": "opentable", "url": "https://www.opentable.com/no-246-reservations-decaur?rid=78919&restref=78919"}, "nights": {"mon": {"open": true, "text": "Dinner 5 to 10"}, "tue": {"open": true, "text": "Dinner 5 to 10"}}, "waze_url": "https://waze.com/ul?q=129%20E%20Ponce%20de%20Leon%20Ave%2C%20Decatur%2C%20GA%2030030&navigate=yes", "vibe": ["date night", "open kitchen", "tight tables", "no dress code"], "parking": "Street meters and the deck across the street (city map; not confirmed)", "why_it_fits": "Worth the drive if the food is the point: wood-fired Italian, 4.6 from 1,668 Google reviews, and you can book ahead.", "main_drawback": "About 40 minutes each way and close to your limit at $120 to $145 for two.", "sources": ["https://no246.com/", "https://no246.com/menus/", "https://no246.com/contact/", "https://no246.com/gallery/", "https://no246.com/wp-content/uploads/2026/10/261021_Dinner.pdf", "https://no246.com/wp-content/uploads/2026/10/261013_CocktailCelebration.pdf"]}, {"id": "leons", "name": "Leon's Full Service", "cuisine": "New American & cocktails", "neighborhood": "Downtown Decatur (Decatur Square)", "address": "131 E Ponce de Leon Ave, Decatur, GA 30030", "phone": "+14043430470", "website": "https://www.leonsfullservice.com/", "photo_urls": ["https://images.squarespace-cdn.com/content/v1/58d017fbb8a79bbd9e6248dd/1694547730644-2HDHG3BG67W3IY6J29M8/untitled-8182.jpeg", "https://images.squarespace-cdn.com/content/v1/58d017fbb8a79bbd9e6248dd/1694537324741-M9XNY84IFVAJF56XAOWP/untitled-8138.jpeg", "https://images.squarespace-cdn.com/content/v1/58d017fbb8a79bbd9e6248dd/1768587411386-KGLFNI7AJ7CUUCKEICI2/untitled-8170.jpg"], "rating": {"value": 4.5, "count": 2134, "source": "Google", "url": "https://wanderlog.com/place/details/1447557/leons-full-service", "seen": "Google rating as embedded in Wanderlog's page data ('rating':4.5, 'numRatings':2134, with a ratingDistribution labeled 'Google' that sums to 2134), fetched 2026-10-25. Not read from Google Maps directly. Other figures seen: Restaurantji 4.4 from 467 ratings (page updated 2026-10-16). Yelp and TripAdvisor returned 403, and the Resy page renders no content to fetchers."}, "review_lines": [{"text": "Amazing food. Excellent, friendly staff. Always a good atmosphere. The short ribs were especially delicious.", "source": "Restaurantji", "date_or_age": "date not shown"}, {"text": "The restaurant was very inviting and the staff is awesome..Food is very delicious", "source": "Restaurantji", "date_or_age": "date not shown"}], "dishes": [{"name": "Crispy Confit Chicken", "price": "$28"}, {"name": "Pork Belly", "price": "$27"}, {"name": "Calamari", "price": "$14.5"}], "menu_url": "https://www.leonsfullservice.com/menus", "total_for_two": {"low": 125, "high": 145, "basis": "Prices are read from the official menu images on leonsfullservice.com/menus: 'fall menu FRONT updated 10.9.26' and 'NEW Fall dinner menu BACK 10.6.26'. Low: Pork Belly $27 + North Georgia Trout $28 + Calamari $14.50 + 2 fall cocktails at $15 = $99.50. High: Crispy Confit Chicken $28 + Flat Iron Steak $36 + Charcuterie + Cheese Plate $18 + 2 cocktails at $16 = $114. Each total is then +8% tax and +20% tip on the pre-tax subtotal (x1.28). Wine by the glass is $11-$17. A Burger ($17), Grilled Tofu ($24) or Risotto ($24.50) brings it well under. The dinner features dated 10.24.26 (Pozole Rojo $26, Steelhead Trout $32) may change by Mon/Tue."}, "drive_min": 40, "booking": {"method": "resy", "url": "https://resy.com/cities/decatur-ga/venues/leons-full-service"}, "nights": {"mon": {"open": true, "text": "Dinner 5 to 10"}, "tue": {"open": true, "text": "Dinner 5 to 10"}}, "waze_url": "https://waze.com/ul?q=131%20E%20Ponce%20de%20Leon%20Ave%2C%20Decatur%2C%20GA%2030030&navigate=yes", "vibe": ["heated covered patio", "dog-friendly", "craft cocktails", "converted gas station"], "parking": "Street meters and the deck across the street (city map; not confirmed)", "why_it_fits": "Lively Decatur favorite with a heated covered patio and strong cocktails.", "main_drawback": "Louder and pricier for what it is: $125 to $145 for two, 40 minutes away.", "sources": ["https://www.leonsfullservice.com/", "https://www.leonsfullservice.com/menus", "https://www.leonsfullservice.com/contact", "https://images.squarespace-cdn.com/content/v1/58d017fbb8a79bbd9e6248dd/161969f7-201c-46b5-b7f2-30a7cec8907a/fall+menu+FRONT+updated+10.9.26.png", "https://images.squarespace-cdn.com/content/v1/58d017fbb8a79bbd9e6248dd/2ffcefd7-e5ca-454d-93e6-7fee16318200/NEW+Fall+dinner+menu+BACK+10.6.26.png", "https://images.squarespace-cdn.com/content/v1/58d017fbb8a79bbd9e6248dd/efb243af-8831-4f24-bb34-422cfe758b10/Screenshot+2026-10-24+145445.png"]}, {"id": "town220", "name": "Town 220", "cuisine": "Upscale steak, seafood, pasta", "neighborhood": "Downtown Madison historic district (next to the James Madison Inn)", "address": "220 W Washington St, Madison, GA 30650", "phone": "+17067521445", "website": "https://town220.com/", "photo_urls": ["https://static.spotapps.co/website_images/ab_websites/428901_website_v1/social_share.jpg", "https://static.spotapps.co/spots/bd/46162dec204a9e9e0db0d3c343c8c9/full", "https://static.spotapps.co/spots/20/9c996b66c24679b63cb6dacdf75db0/full"], "rating": {"value": 4.6, "count": 479, "source": "Google", "url": "https://restaurantguru.com/Town-220-Restaurant-Madison-Georgia", "seen": "Google figure as shown on Restaurant Guru ('Google (4.6/5), 479 reviews', page updated Sep 29, 2026). Could not open Google Maps or Resy directly. Cross-checks: Tripadvisor 4.5 (414, #1 of 52 in Madison) and Yelp 4.0 (139, via Yahoo Local), both from search snippets."}, "review_lines": [{"text": "Loved it! Meatloaf was fantastic!", "source": "Google", "date_or_age": "2 months ago"}, {"text": "the service is great, and the food is superb.", "source": "Restaurant Guru visitor review", "date_or_age": "4 years ago"}], "dishes": [{"name": "Grilled Salmon", "price": "$35"}, {"name": "Shrimp Pomodoro", "price": "$34"}, {"name": "Chicken Parmesan", "price": "$31"}], "menu_url": "https://town220.com/madison-downtown-madison-town-220-food-menu", "total_for_two": {"low": 110, "high": 145, "basis": "Low: Chicken Parmesan ($31) + Tagliatelle Primavera ($33) + Truffle Fries ($12) + 2 soft drinks (~$4 each, assumed) = $84 x 1.28 (8% tax + 20% tip) = ~$108. High: Grilled Salmon ($35) + Shrimp Pomodoro ($34) + Smoked Salmon & Crab Napoleon ($18) + 2 cocktails (~$14 each, assumed; no drink prices published) = $115 x 1.28 = ~$147. Fits under $150 only with mid-priced entrees. A steak or second round of drinks goes over."}, "drive_min": 45, "booking": {"method": "resy", "url": "https://resy.com/cities/madison-ga/venues/town-220"}, "nights": {"mon": {"open": false, "text": "Closed Mondays"}, "tue": {"open": true, "text": "Dinner 5 to 9"}}, "waze_url": "https://waze.com/ul?q=220%20W%20Washington%20St%2C%20Madison%2C%20GA%2030650&navigate=yes", "vibe": ["special occasion", "formal to semi-formal", "former cotton factory", "romantic patio"], "parking": "Parking on site", "why_it_fits": "The special-occasion option: #1 of 52 restaurants in Madison on Tripadvisor, in a historic small-town square.", "main_drawback": "45 minutes away and right at your $150 limit; Tuesday only.", "sources": ["https://town220.com/", "https://town220.com/madison-downtown-madison-town-220-food-menu", "https://town220.com/madison-downtown-madison-town-220-about", "https://town220.com/madison-downtown-madison-town-220-happy-hours-specials", "https://resy.com/cities/madison-ga/venues/town-220", "https://www.exploregeorgia.org/madison/food-drink/casual-full-service/town-220-restaurant"]}], "pick": {"mon": "mystic", "tue": "town220"}, "checked_line": "Hours checked on each restaurant's own site Sat Oct 24 and again Sun Oct 25 3:45 AM. Ratings and review lines from Google (via aggregators). Tables not checked yet.", "method": "Hours, menus and photos come from each restaurant's own site. Google ratings and review lines were read through aggregator pages (Restaurant Guru, Wanderlog) because Google, Yelp and TripAdvisor block automated reads. Totals for two are estimates: two mid-priced entrees, one shared starter, two drinks, 8% tax and 20% tip. Drive times are approximate, from Olde Town Conyers, with weeknight traffic added.", "not_checked": "Not checked: live table availability on OpenTable and Resy, weeknight walk-in waits, holiday or private-event closures, and whether your wife is free."}</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const R = D.restaurants; let night = 'mon'; let open = {};
+const tg = window.Telegram && Telegram.WebApp; if (tg) { try { tg.ready(); tg.expand(); } catch(e){} }
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = t => t ? `$${t.low}–${t.high}` : '—';
+function hours(r){ return r.nights[night]; }
+function entreeRange(r){ const ps=(r.dishes||[]).map(d=>parseFloat(String(d.price).replace(/[^0-9.]/g,''))).filter(n=>n>0); if(!ps.length) return '—'; const lo=Math.round(Math.min(...ps)), hi=Math.round(Math.max(...ps)); return lo===hi?`$${lo}`:`$${lo}–${hi}`; }
+function shortHood(h){ return String(h||'').replace(/\s*\([^)]*\)/g,'').split(/[,;]/)[0]; }
+function srcLabel(u){ const h=u.replace(/^https?:\/\/(www\.)?/,''); if(/restaurantguru/.test(h)) return 'Google rating (Restaurant Guru)'; if(/wanderlog/.test(h)) return 'Google rating (Wanderlog)'; if(/restaurantji/.test(h)) return 'Reviews (Restaurantji)'; if(/infatuation/.test(h)) return 'The Infatuation'; if(/exploregeorgia/.test(h)) return 'Explore Georgia'; if(/web\.archive/.test(h)) return 'Own site (archived copy)'; if(/opentable/.test(h)) return 'OpenTable'; if(/resy/.test(h)) return 'Resy'; if(/menu|\.pdf|imenupro/.test(h)) return 'Menu'; return 'Own site'; }
+function isOpen(r){ return hours(r).open; }
+function stateLine(r){
+  const h = hours(r);
+  if (!h.open) return `<div class="state"><span class="dot no"></span>Closed ${night==='mon'?'Mondays':'Tuesdays'}</div>`;
+  const b = r.booking;
+  const how = b.method==='walk-in' ? 'No reservations' :
+              b.method==='opentable' ? 'OpenTable · tables not checked' :
+              b.method==='resy' ? 'Resy · tables not checked' : 'Call ahead to book';
+  return `<div class="state"><span class="dot ${b.method==='walk-in'?'warn':'ok'}"></span>${esc(h.text)} · ${how}</div>`;
+}
+function primaryAct(r){
+  const b = r.booking;
+  if (!isOpen(r)) return `<button class="primary" onclick="setNight('${night==='mon'?'tue':'mon'}')">See ${night==='mon'?'Tuesday':'Monday'}</button>`;
+  if (b.method==='walk-in') return `<a class="primary" href="${esc(r.waze_url)}" target="_blank">Go · Waze</a>`;
+  return `<a class="primary" href="${esc(b.url || r.website)}" target="_blank" onclick="booked('${esc(r.name)}')">Book 6:30</a>`;
+}
+function photos(r){
+  return r.photo_urls && r.photo_urls.length ? `<div class="photos">${r.photo_urls.map(u=>`<img src="${esc(u)}" alt="" loading="lazy" onerror="this.remove()">`).join('')}</div>` : `<div class="photos none">No photo yet</div>`;
+}
+function full(r, isPick){
+  const rt = r.rating ? `${r.rating.value}★ <span style="color:var(--soft);font-weight:500;font-size:14px">(${Number(r.rating.count).toLocaleString()} ${esc(r.rating.source)})</span>` : 'Not rated yet';
+  const q = (r.review_lines||[])[0];
+  return `<div class="card ${isPick?'pick':''}">${photos(r)}<div class="body">
+    ${isPick?`<div class="mark">Cedric's pick for ${night==='mon'?'Monday':'Tuesday'}</div>`:''}
+    <div class="name">${esc(r.name)}</div>
+    <div class="sub">${esc(r.cuisine)} · ${esc(shortHood(r.neighborhood))}</div>
+    <div class="facts">
+      <div class="fact"><div class="v num">${money(r.total_for_two)}</div><div class="k">for two, all in</div></div>
+      <div class="fact"><div class="v num">${r.drive_min} min</div><div class="k">drive, about</div></div>
+      <div class="fact"><div class="v small">${rt}</div><div class="k">rating</div></div>
+      <div class="fact"><div class="v small num">${entreeRange(r)}</div><div class="k">entrées</div></div>
+    </div>
+    ${stateLine(r)}
+    ${q?`<blockquote class="quote">“${esc(q.text)}”<cite>${esc(q.source)}, ${esc(q.date_or_age)}</cite></blockquote>`:''}
+    <p class="why">${esc(r.why_it_fits)} <span>${esc(r.main_drawback)}</span></p>
+    <div class="acts">${primaryAct(r)}<a class="secondary" href="tel:${esc(r.phone)}">Call</a>${r.booking.method==='walk-in' || !isOpen(r) ? `<a class="secondary" href="${esc(r.menu_url||r.website)}" target="_blank">Menu</a>` : `<a class="secondary" href="${esc(r.waze_url)}" target="_blank">Waze</a>`}</div>
+    <button class="more" onclick="toggleDetail(this)">Menu, parking, details</button>
+    <div class="detail"><dl>
+      <dt>Menu</dt><dd>${(r.dishes||[]).map(d=>esc(d.name)+' '+esc(d.price)).join('<br>') || '—'}${r.menu_url?`<br><a style="color:var(--navy)" href="${esc(r.menu_url)}" target="_blank">Full menu</a>`:''}</dd>
+      <dt>Feel</dt><dd>${(r.vibe||[]).map(esc).join(', ') || '—'}</dd>
+      <dt>Parking</dt><dd>${esc(r.parking || '—')}</dd>
+      <dt>Address</dt><dd>${esc(r.address)}</dd>
+      <dt>Hours</dt><dd>Mon: ${esc(r.nights.mon.text)}<br>Tue: ${esc(r.nights.tue.text)}</dd>
+      <dt>Estimate</dt><dd>Two entrées, a shared starter, two drinks, tax and 20% tip.</dd>
+    </dl>${(r.review_lines||[])[1]?`<blockquote class="quote">“${esc(r.review_lines[1].text)}”<cite>${esc(r.review_lines[1].source)}, ${esc(r.review_lines[1].date_or_age)}</cite></blockquote>`:''}</div>
+  </div></div>`;
+}
+function row(r, i){
+  const img = r.photo_urls && r.photo_urls[0] ? `<img src="${esc(r.photo_urls[0])}" alt="" loading="lazy" onerror="this.outerHTML='<div class=ph></div>'">` : `<div class="ph"></div>`;
+  const h = hours(r);
+  const s = !h.open ? `<span class="dot no"></span>Closed ${night==='mon'?'Mondays':'Tuesdays'}` :
+            r.booking.method==='walk-in' ? `<span class="dot warn"></span>Walk-in · ${esc(h.text)}` : `<span class="dot ok"></span>${esc(r.booking.method==='opentable'?'OpenTable':r.booking.method==='resy'?'Resy':'Call ahead')} · ${esc(h.text)}`;
+  return `<button class="row ${h.open?'':'closed'}" onclick="expand(${i})">${img}<div><div class="n">${esc(r.name)}</div>
+    <div class="m num">${r.drive_min} min · ${money(r.total_for_two)} for two${r.rating?` · ${r.rating.value}★`:''}</div><div class="s">${s}</div></div></button>`;
+}
+function render(){
+  const pick = R.find(r => r.id === D.pick[night]);
+  document.getElementById('h1').textContent = `Dinner, ${night==='mon'?'Monday':'Tuesday'} night`;
+  document.getElementById('pick').innerHTML = full(pick, true);
+  const others = R.filter(r => r !== pick).sort((a,b) => (isOpen(b)-isOpen(a)) || a.drive_min - b.drive_min);
+  document.getElementById('rows').innerHTML = others.map(r => open[r.id] ? `<div class="expanded">${full(r,false)}<button class="more" onclick="collapse('${r.id}')">Show less</button></div>` : row(r, R.indexOf(r))).join('');
+  for (const n of ['mon','tue']) { const c = R.filter(r=>r.nights[n].open).length; document.getElementById('cnt-'+n).textContent = `${c} of ${R.length} open`; }
+  document.getElementById('seg-mon').setAttribute('aria-pressed', night==='mon'); document.getElementById('seg-tue').setAttribute('aria-pressed', night==='tue');
+  document.getElementById('checked').textContent = D.checked_line;
+  document.getElementById('cmp').innerHTML = `<table class="cmp"><tr><th></th><th>Drive</th><th>For two</th><th>Rating</th><th>${night==='mon'?'Mon':'Tue'}</th></tr>` +
+    [...R].sort((a,b)=>a.drive_min-b.drive_min).map(r=>`<tr><td class="nm">${esc(r.name)}</td><td class="num">${r.drive_min}m</td><td class="num">${money(r.total_for_two)}</td><td class="num">${r.rating?r.rating.value+'★':'—'}</td><td>${hours(r).open?(r.booking.method==='walk-in'?'Walk-in':'Book'):'Closed'}</td></tr>`).join('') + `</table>`;
+  document.getElementById('src').innerHTML = `<p style="color:var(--soft);font-size:14px;margin-bottom:12px">${esc(D.method)}</p><ul class="srcl">` +
+    R.map(r=>{ const seen={}; const ls=[...(r.rating&&r.rating.url?[r.rating.url]:[]),...(r.sources||[])].filter(u=>{const l=srcLabel(u); if(seen[l]) return false; seen[l]=1; return true;}).slice(0,5).map(u=>`<a href="${esc(u)}" target="_blank">${esc(srcLabel(u))}</a>`).join(' · '); return `<li><b style="color:var(--ink)">${esc(r.name)}</b><br>${ls}</li>`; }).join('') +
+    `</ul><p style="color:var(--faint);font-size:13px">${esc(D.not_checked)}</p>`;
+}
+function setNight(n){ night = n; open = {}; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function expand(i){ open[R[i].id] = true; render(); }
+function collapse(id){ delete open[id]; render(); }
+function toggleDetail(b){ const d = b.nextElementSibling; d.classList.toggle('open'); b.textContent = d.classList.contains('open') ? 'Hide details' : 'Menu, parking, details'; }
+function openSheet(k){ document.getElementById('sh-'+k).classList.add('open'); }
+function closeSheet(){ document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open')); }
+let tt; function toast(m){ const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(()=>t.classList.remove('show'), 3200); }
+function booked(n){ setTimeout(()=>toast(`When you come back, Cedric asks: did you get the table at ${n}? Then it goes on your calendar.`), 400); }
+function ask(q){ q = q || document.getElementById('q').value; if(!q) return; toast(`In Cedric, "${q}" goes to him and this report updates in place.`); document.getElementById('q').value=''; }
+function share(){
+  const top = R.filter(r=>r.nights[night].open).sort((a,b)=>a.drive_min-b.drive_min).slice(0,3);
+  const txt = `Dinner ${night==='mon'?'Monday':'Tuesday'} night? A few options:\n` + top.map((r,i)=>`${i+1}. ${r.name} (${r.cuisine}, ${r.drive_min} min)`).join('\n') + `\nWhich sounds good?`;
+  const url = 'https://t.me/share/url?url=' + encodeURIComponent(top[0].website) + '&text=' + encodeURIComponent(txt);
+  if (tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
+}
+const P = new URLSearchParams(location.search);
+if (P.get('w')) { const w = P.get('w') + 'px'; document.documentElement.style.cssText = `width:${w};overflow-x:hidden`; document.body.style.width = w; const st = document.createElement('style'); st.textContent = `.sheet,.top{right:auto;width:${w}} .toast{right:auto;width:calc(${w} - 32px)}`; document.head.appendChild(st); }
+if (P.get('night') === 'tue') night = 'tue';
+if (P.get('expand')) open[P.get('expand')] = true;
+render();
+if (P.get('detail')) { const b = document.querySelector('#pick .more'); if (b) toggleDetail(b); }
+if (P.get('sheet')) openSheet(P.get('sheet'));
+</script>
+</body>
+</html>
