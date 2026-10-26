@@ -976,8 +976,16 @@ function renderItem(gr) {
     const ch = choiceButtons(it); if (ch) body.append(ch);
     const s = c && c.silence ? c.silence : String(it.way_out || "").trim(); if (s) body.append(el("p", { class: "silence" }, s));
   } else if (g === "parked") {
-    body.append(el("div", { class: "acts" }, el("button", { class: "btn ghost wide", onclick: () => choose(it, { code: "unhold", label: "Bring it back now" }, "card") }, "Bring it back now")));
-    if (it.ask) body.append(el("p", { class: "silence" }, "It comes back " + (it.bring_back_at ? dayLabel(it.bring_back_at).replace(/^T/, "t") + " " + clock(it.bring_back_at) : "later") + ". Bring it back to act on it now."));
+    // A parked decision keeps its buttons (he may act early, e.g. pay before Monday); bringing it back is the quiet option.
+    const back = it.bring_back_at ? dayLabel(it.bring_back_at).replace(/^T/, "t") + " " + clock(it.bring_back_at) : "later";
+    const ch = it.ask ? choiceButtons(it) : null;
+    if (ch) {
+      body.append(ch, el("p", { class: "silence" }, "Set to come back " + back + ". You can act on it now if you like."));
+      body.append(el("button", { class: "more", onclick: () => choose(it, { code: "unhold", label: "Bring it back now" }, "card") }, "Bring it back now"));
+    } else {
+      body.append(el("div", { class: "acts" }, el("button", { class: "btn ghost wide", onclick: () => choose(it, { code: "unhold", label: "Bring it back now" }, "card") }, "Bring it back now")));
+      if (it.ask) body.append(el("p", { class: "silence" }, "It comes back " + back + ". Bring it back to act on it now."));
+    }
   }
   else if (g === "checking") body.append(el("div", { class: "acts" }, el("button", { class: "btn ghost wide", onclick: () => choose(it, { code: "confirmed_by_owner", label: "Yes, it went through" }, "card") }, "Yes, it went through")));
   // More details: Cedric's labeled details, his notes, the original.
