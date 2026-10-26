@@ -507,9 +507,9 @@ function privLabel(it) {
   if (it.plan && it.plan.job) return "A Workbench job";
   if (h === "pay" || /\b(pay|paid|bill|past due|due \$|visa|card payment|rent|copay|balance|credit|autopay)\b|\$\d/i.test(t)) return /rent/i.test(t) ? "Rent" : /copay/i.test(t) ? "A copay" : /balance|under \$/i.test(t) ? "A low balance" : "A money item";
   if (/\b(dinner|restaurant|lunch|brunch)\b/i.test(t)) return "Dinner plans";
-  if (/\b(scan|study|colonoscopy|doctor|appointment|visit|refill|pharmacy|shot|vaccine|health|clinic|dental|dentist|medical|lab)\b/i.test(t)) return h === "call" ? "A call to make" : "A health item";
-  if (/\b(mom|dad|kecia|family|kids?|flight)\b/i.test(t)) return "A family plan";
-  if (/\b(piedmont|work|shift|survey|hr|occupational|license|ceu)\b/i.test(t)) return "A work task";
+  if (/\b(scan|study|procedure|doctor|appointment|visit|refill|pharmacy|shot|vaccine|health|clinic|dental|dentist|medical|lab)\b/i.test(t)) return h === "call" ? "A call to make" : "A health item";
+  if (/\b(mom|dad|wife|husband|partner|family|kids?|flight)\b/i.test(t)) return "A family plan";
+  if (/\b(work|shift|survey|hr|occupational|license|ceu|hospital|employer)\b/i.test(t)) return "A work task";
   if (h === "call") return "A call to make";
   if (/your week/i.test(t)) return "Your weekly review";
   if (/review/i.test(t)) return "A review";
