@@ -257,6 +257,32 @@ input.tx{flex:1;min-width:0;min-height:48px;border-radius:12px;border:1px solid 
 .md h3{font-size:17px;margin:18px 0 6px}.md p{margin:8px 0}.md ul,.md ol{margin:8px 0 8px 22px}.md b{font-weight:600}
 .md table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0;display:block;overflow-x:auto}
 .md td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
+/* research reports (cedric_screen_report): places side by side, photos swipe, rows open in place */
+.photos{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:2px;background:#000;scrollbar-width:none;overscroll-behavior-x:contain}
+.photos::-webkit-scrollbar{display:none}
+.photos figure{flex:0 0 100%;position:relative;scroll-snap-align:start;margin:0}
+.photos img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#1a1d25}
+.photos figcaption{position:absolute;left:8px;bottom:6px;max-width:calc(100% - 64px);font:500 10px/1.3 var(--mono);color:rgba(255,255,255,.88);background:rgba(0,0,0,.5);padding:2px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.photos .pc{position:absolute;right:8px;bottom:6px;font:500 10px var(--mono);color:#fff;background:rgba(0,0,0,.5);padding:2px 6px;border-radius:6px}
+.prow{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:center;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:8px;width:100%;text-align:left}
+.prow img,.prow .ph{width:72px;height:72px;border-radius:12px;object-fit:cover;background:#2a2f3a;display:block}
+.prow .n{font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.prow .m{font:400 12px var(--mono);color:var(--mut);margin-top:3px;overflow-wrap:anywhere}
+.prow .s{font-size:13px;margin-top:5px;display:flex;align-items:center;gap:6px;color:var(--mut);overflow-wrap:anywhere}
+.prow .s .d{width:8px;height:8px;border-radius:50%;flex:none}
+.prow.closed{opacity:.55}
+.rp-less{display:block;width:100%;text-align:left;font-weight:600;font-size:14.5px;min-height:44px;margin:-6px 0 8px;color:var(--mut)}
+table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+table.cmp th,table.cmp td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.cmp th{color:var(--dim);font:500 11px var(--mono)}
+table.cmp td{font-family:var(--mono)}
+table.cmp td.nm{font-family:var(--sans);font-weight:600}
+table.cmp tr.closed td{color:var(--dim)}
+.srcl{list-style:none}
+.srcl li{margin:0 0 12px;color:var(--mut);font-size:14px;overflow-wrap:anywhere}
+.srcl b{color:var(--ink)}
+.srcl button{color:var(--ink);text-decoration:underline;text-decoration-color:var(--dim);text-underline-offset:3px;font-size:14px;margin-right:10px;min-height:32px}
+.checked{font:400 11.5px/1.5 var(--mono);color:var(--dim);margin-top:10px;overflow-wrap:anywhere}
 
 /* dock */
 .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(448px,calc(100% - 32px));display:flex;gap:8px;z-index:30}
@@ -298,6 +324,7 @@ textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:1
 </div>
 <section class="view" id="itemView" aria-hidden="true"></section>
 <section class="view" id="readerView" aria-hidden="true"></section>
+<section class="view" id="reportView" aria-hidden="true"></section>
 
 <nav class="dock" id="dock"><div class="pills">
   <button class="p" data-tab="now" aria-pressed="true">Now</button>
@@ -321,6 +348,9 @@ textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:1
   </div>
   <p class="fine">Show details or Hide details at the top still works any time; this only sets how Cedric opens. It's saved with your account, so every phone and computer opens the same way.</p>
   <button class="btn ghost wide" id="refreshBtn" style="margin-top:16px">Refresh now</button>
+</div></div>
+<div class="sheet" id="repSheet" hidden><div class="panel">
+  <button class="close" id="repSheetDone">Done</button><h3 id="repSheetTitle"></h3><div id="repSheetBody"></div>
 </div></div>
 <div class="toast" id="toast" hidden></div>
 <div class="bar" id="bar" role="status" hidden><span class="b-t" id="barText"></span><button id="barUndo">Undo</button></div>
@@ -347,6 +377,8 @@ const state = {
   snap: new Map(),     // loop id -> the item as last seen (so a cleared item in The Note keeps its name)
   view: null,          // { id, item } of the item page that is open
   reader: null,        // the Made card open in the reader
+  report: null,        // the research report open in the report view: { slug, data, night, open:Set }
+  reports: new Map(),  // slug -> report fetched this visit (cedric_screen_report)
   hand: null,          // the prepared action he just opened (dialer, payment page); shown on its item page until OK
   more: new Set(),     // item pages whose "More details" are open
   openUpd: new Set(),
@@ -497,7 +529,8 @@ function anyPending() {
 const cardOf = it => it && it.card && typeof it.card === "object" && it.card.headline ? it.card : null;
 const headline = it => { const c = cardOf(it); return c ? c.headline : (it.ask || it.title); };
 const listTitle = it => { const c = cardOf(it); return c ? c.headline : it.title; };
-const pickText = it => String(it.recommend || "").trim().replace(/^my pick( for [^:]+)?:\s*/i, "");
+// A card that says no_pick (he asked for the options, not a decision) never shows the loop's old recommend as "My pick".
+const pickText = it => { const c = cardOf(it); if (c && c.no_pick) return ""; return String(it.recommend || "").trim().replace(/^my pick( for [^:]+)?:\s*/i, ""); };
 // What private mode shows: Cedric's label, else a kind guessed from the item (never amounts, names, doctors or conditions).
 const KIND_LABEL = { bill: "A bill to pay", appointment: "An appointment", call: "A call to make", report: "A report", task: "A task", family: "A family plan", work: "A work task" };
 function privLabel(it) {
@@ -683,6 +716,7 @@ function rowSub(x, g) {
   if (g === "waiting") return "Waiting on " + (x.waiting_on || "someone else");
   if (g === "with_cedric") return x.pending && x.pending.code === "note" ? "Your note: " + (x.pending.note || "") : x.pending ? "You chose: " + (x.pending.label || x.pending.code) : "";
   const pk = pickText(x); if (pk) return "My pick: " + pk;
+  const c = cardOf(x); if (c && c.no_pick) return c.figure_caption || "";
   return x.detail ? String(x.detail).split("\n")[0] : "";
 }
 const DOT = { asks: "ask", yours: "ask", rest: "ask", parked: "held", checking: "chk", waiting: "wait", with_cedric: "with", cedric: "ced" };
@@ -734,7 +768,7 @@ const madeKind = m => MADE_KIND[m.kind] || "Made for you";
 function madeCard(m) {
   const p = m.preview || {};
   const pin = el("button", { class: "pin" + (m.pinned ? " on" : ""), "aria-label": m.pinned ? "Unpin" : "Pin", onclick: e => { e.stopPropagation(); togglePin(m); } }, svg(m.pinned ? ICON.pinOn : ICON.pin));
-  const card = el("button", { class: "made", onclick: () => openReader(m) },
+  const card = el("button", { class: "made", onclick: () => p.report_slug ? openReport(p.report_slug, m) : openReader(m) },
     el("div", { class: "k" }, ...fp(madeKind(m) + " · " + when(m.updated_at), when(m.updated_at))),
     el("h3", {}, ...fp(m.title, (p.private_title || madeKind(m)))));
   if (p.line) card.append(el("p", { class: "hide-p" }, p.line));
@@ -784,6 +818,163 @@ function openReader(m) {
   r.replaceChildren(inner); r.scrollTop = 0; slideIn(r);
 }
 function closeReader() { state.reader = null; slideOut($("#readerView")); }
+
+// ---------- a research report (cedric_screen_report): the full options, side by side ----------
+// The body is data (any text in it goes in as text). type "places": options with photos, facts, hours per night, booking.
+// body.no_pick = true: no pick card, no "My pick" anywhere, plain order (open that night first, then closest).
+const RP_BOOK = { opentable: "OpenTable", resy: "Resy", phone: "Call ahead", "walk-in": "Walk-in" };
+async function openReport(slug, made) {
+  haptic();
+  let data = state.reports.get(slug);
+  if (!data) {
+    try { data = await rpc("cedric_screen_report", { p_slug: slug }); }
+    catch (e) { data = null; if (!e.missing && !made) { toast(e.network ? "Couldn't reach Cedric. Try again in a moment." : "Couldn't open that report."); return; } }
+    if (data) state.reports.set(slug, data);
+  }
+  if (!data || !data.body || data.body.type !== "places" || !Array.isArray(data.body.options)) {
+    const m = made || (state.make || []).find(x => x.slug === slug);
+    if (m) return openReader(m);
+    toast("That report isn't ready yet."); return;
+  }
+  const nights = Array.isArray(data.body.nights) ? data.body.nights : [], today = nyDay(nowMs());
+  const nt = nights.find(n => n.date && dateDay(n.date) >= today) || nights[nights.length - 1] || null;
+  if (!state.report || state.report.slug !== slug) $("#reportView").scrollTop = 0;
+  state.report = { slug, data, night: nt ? nt.key : null, open: new Set() };
+  renderReport(); slideIn($("#reportView"));
+}
+function closeReport() { state.report = null; closeRepSheet(); slideOut($("#reportView")); }
+function closeRepSheet() { $("#repSheet").hidden = true; syncBack(); }
+function openRepSheet(title, kids) { $("#repSheetTitle").textContent = title; $("#repSheetBody").replaceChildren(...kids); $("#repSheet").hidden = false; syncBack(); }
+const rpNight = () => { const r = state.report, ns = r.data.body.nights || []; return ns.find(n => n.key === r.night) || ns[0] || { key: null, label: "", long: "" }; };
+const rpHours = o => (o.nights && o.nights[state.report.night]) || { open: true, text: "" };
+const rpMoney = t => t && t.low != null ? "$" + t.low + (t.high != null && t.high !== t.low ? "–" + t.high : "") : "—";
+const rpDrive = o => o.drive && o.drive.min != null ? o.drive.min + " min" : "—";
+function rpEntrees(o) {
+  const ps = (o.dishes || []).map(d => parseFloat(String(d.price).replace(/[^0-9.]/g, ""))).filter(n => n > 0); if (!ps.length) return "—";
+  const lo = Math.round(Math.min(...ps)), hi = Math.round(Math.max(...ps)); return lo === hi ? "$" + lo : "$" + lo + "–" + hi;
+}
+// Plain order: open that night first, then closest drive first (then the order Cedric wrote them in).
+function rpOrder(list) { return list.map((o, i) => [o, i]).sort((a, b) => (rpHours(b[0]).open - rpHours(a[0]).open) || ((a[0].drive || {}).min ?? 999) - ((b[0].drive || {}).min ?? 999) || a[1] - b[1]).map(x => x[0]); }
+const rpLink = (label, url, cls) => /^(https:\/\/|tel:)/i.test(url || "") ? el("button", { class: cls || "link", onclick: () => openTarget(url) }, label) : null;
+function rpHow(o) { const m = (o.booking || {}).method; return m === "walk-in" ? "No reservations" : m === "opentable" ? "OpenTable · tables not checked" : m === "resy" ? "Resy · tables not checked" : "Call ahead to book"; }
+function rpState(o) {
+  const h = rpHours(o), m = (o.booking || {}).method;
+  if (!h.open) return el("div", { class: "state" }, el("span", { class: "d no" }), el("span", {}, h.text || "Closed that night"));
+  return el("div", { class: "state" }, el("span", { class: "d " + (m === "walk-in" ? "warn" : "ok") }), el("span", {}, (h.text ? h.text + " · " : "") + rpHow(o)));
+}
+function rpPhotos(o) {
+  const ph = (o.photos || []).filter(p => p && /^https:\/\//.test(p.url || p)); if (!ph.length) return null;
+  return el("div", { class: "photos" }, ph.map((p, i) => el("figure", {}, el("img", { src: p.url || p, alt: o.name || "", loading: "lazy" }),
+    p.credit ? el("figcaption", {}, "Photo: " + p.credit) : null, ph.length > 1 ? el("span", { class: "pc" }, (i + 1) + "/" + ph.length) : null)));
+}
+const rpQuote = q => q && q.text ? el("blockquote", { class: "quote" }, "“" + q.text + "”", el("cite", {}, el("span", {}, [q.source, q.age].filter(Boolean).join(", ")))) : null;
+function rpMain(o) {
+  const h = rpHours(o), b = o.booking || {}, ns = state.report.data.body.nights || [];
+  if (!h.open) { const other = ns.find(n => n.key !== state.report.night && o.nights && o.nights[n.key] && o.nights[n.key].open);
+    return other ? el("button", { class: "btn main", onclick: () => setRpNight(other.key) }, "See " + other.long) : null; }
+  if (b.method === "walk-in") return rpLink("Go · Waze", o.waze_url || o.maps_url, "btn main");
+  return rpLink(b.method === "phone" && !b.url ? "Call to book" : "Book", b.url || o.website, "btn main");
+}
+function rpFull(o, mark) {
+  const body = el("div", { class: "body" }), r = o.rating, nm = rpNight();
+  if (mark) body.append(el("div", { class: "mark" }, mark));
+  body.append(el("div", { class: "cname" }, o.name), el("div", { class: "csub" }, [o.cuisine, o.area].filter(Boolean).join(" · ")));
+  body.append(el("div", { class: "facts" },
+    el("div", { class: "fact" }, el("div", { class: "v" }, rpMoney(o.for_two)), el("div", { class: "kk" }, "for two, all in")),
+    el("div", { class: "fact" }, el("div", { class: "v" }, rpDrive(o)), el("div", { class: "kk" }, "drive" + (o.drive && o.drive.mi != null ? ", " + o.drive.mi + " mi" : ""))),
+    el("div", { class: "fact" }, el("div", { class: "v" }, r ? r.value + "★" : "—"), el("div", { class: "kk" }, r ? (r.source || "Rating") + (r.count ? " · " + Number(r.count).toLocaleString("en-US") : "") : "not rated")),
+    el("div", { class: "fact" }, el("div", { class: "v" }, rpEntrees(o)), el("div", { class: "kk" }, "entrées"))));
+  body.append(rpState(o));
+  const q = rpQuote((o.reviews || [])[0]); if (q) body.append(q);
+  if (o.why || o.drawback) body.append(el("p", { class: "why" }, o.why || "", o.drawback ? el("span", {}, (o.why ? " " : "") + o.drawback) : null));
+  const h = rpHours(o), third = (o.booking || {}).method === "walk-in" || !h.open ? rpLink("Menu", o.menu_url || o.website, "btn ghost") : rpLink("Waze", o.waze_url || o.maps_url, "btn ghost");
+  body.append(el("div", { class: "acts" }, rpMain(o), o.phone ? el("button", { class: "btn ghost", onclick: () => { copyText(o.phone); openTarget(telHref(o.phone)); } }, "Call") : null, third));
+  const key = "d:" + o.id, open = state.report.open.has(key), ns = state.report.data.body.nights || [];
+  body.append(el("button", { class: "more", "aria-expanded": open ? "true" : "false", onclick: () => { open ? state.report.open.delete(key) : state.report.open.add(key); renderReport(); } }, open ? "Hide" : "Menu, parking, details"));
+  if (open) {
+    const dl = el("dl", {}), row = (k, ...v) => dl.append(el("dt", {}, k), el("dd", {}, ...v));
+    row("Menu", (o.dishes || []).map((d, i) => [i ? el("br") : null, d.name + (d.price ? " " + d.price : "")]), o.menu_url ? [el("br"), rpLink("Full menu", o.menu_url)] : null);
+    if ((o.vibe || []).length) row("Feel", o.vibe.join(", "));
+    if (o.parking) row("Parking", o.parking);
+    if (o.address) row("Address", o.address, o.maps_url ? [el("br"), rpLink("Google Maps", o.maps_url)] : null);
+    if (o.phone) row("Phone", copyRow(fmtPhone(o.phone)));
+    if (o.website) row("Website", rpLink(String(o.website).replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, ""), o.website));
+    row("Hours", ns.map((n, i) => [i ? el("br") : null, n.label + ": " + ((o.nights || {})[n.key] ? o.nights[n.key].hours || o.nights[n.key].text : "—")]));
+    if (o.drive && o.drive.note) row("Drive", rpDrive(o) + ", " + o.drive.note);
+    row("Estimate", state.report.data.body.estimate_note || "", o.for_two && o.for_two.basis ? el("div", { class: "notes", style: "margin-top:6px;font-size:13px" }, o.for_two.basis) : null);
+    const det = el("div", { class: "detail" }, dl), q2 = rpQuote((o.reviews || [])[1]); if (q2) det.append(q2);
+    body.append(det);
+  }
+  return el("div", { class: "card" + (mark ? " pick" : "") }, rpPhotos(o), body);
+}
+function rpRow(o) {
+  const h = rpHours(o), ph = (o.photos || [])[0], m = (o.booking || {}).method;
+  const s = !h.open ? [el("span", { class: "d no" }), h.text || "Closed that night"] : [el("span", { class: "d " + (m === "walk-in" ? "warn" : "ok") }), (RP_BOOK[m] || "Call ahead") + (h.text ? " · " + h.text : "")];
+  return el("button", { class: "prow" + (h.open ? "" : " closed"), "data-opt": o.id, onclick: () => { state.report.open.add("o:" + o.id); haptic(); renderReport(); } },
+    ph && /^https:\/\//.test(ph.url || ph) ? el("img", { src: ph.url || ph, alt: "", loading: "lazy" }) : el("div", { class: "ph" }),
+    el("div", {}, el("div", { class: "n" }, o.name), el("div", { class: "m" }, [rpDrive(o), rpMoney(o.for_two), o.rating ? o.rating.value + "★" : null].filter(Boolean).join(" · ")), el("div", { class: "s" }, s)));
+}
+function setRpNight(k) { if (!state.report) return; state.report.night = k; state.report.open = new Set(); haptic(); renderReport(); $("#reportView").scrollTop = 0; }
+function renderReport() {
+  const v = $("#reportView"), R = state.report; if (!R) return;
+  const B = R.data.body, opts = B.options, nm = rpNight(), top = v.scrollTop, inner = el("div", { class: "inner" });
+  const pickId = !B.no_pick && B.pick && R.night ? B.pick[R.night] : null, pick = pickId ? opts.find(o => o.id === pickId) : null;
+  inner.append(el("div", { class: "top" }, el("button", { class: "back", onclick: closeReport }, "‹ Back"), el("span", { class: "ttl" }, B.topbar || R.data.title || "Report"),
+    B.share ? el("button", { class: "tool", onclick: shareReport }, "Share") : el("span")));
+  const head = el("div", { class: "ihead" }, el("h1", {}, (B.heading || R.data.title || "Report") + (nm.long ? ", " + nm.long + " night" : "")));
+  if (B.asked) head.append(el("p", { class: "ask" }, "You asked for: ", el("b", {}, B.asked), "."));
+  inner.append(head);
+  const ns = B.nights || [];
+  if (ns.length > 1) inner.append(el("div", { class: "seg", role: "group", "aria-label": "Night", style: ns.length > 2 ? "grid-template-columns:repeat(" + ns.length + ",1fr)" : null },
+    ns.map(n => el("button", { "aria-pressed": String(n.key === R.night), onclick: () => setRpNight(n.key) }, n.label,
+      el("small", {}, opts.filter(o => o.nights && o.nights[n.key] && o.nights[n.key].open).length + " of " + opts.length + " open")))));
+  if (B.basis) inner.append(el("p", { class: "basis" }, B.basis));
+  if (pick) inner.append(rpFull(pick, "My pick for " + nm.long));
+  const rest = rpOrder(opts.filter(o => o !== pick));
+  inner.append(el("div", { class: "section" }, el("h2", {}, pick ? "Other options" : "All " + opts.length + " places"), el("button", { class: "link", onclick: showCompare }, "Compare")));
+  inner.append(el("p", { class: "basis", style: "margin-top:-6px" }, (B.order_note || "Open that night first, then closest") + "."));
+  for (const o of rest) {
+    if (R.open.has("o:" + o.id)) inner.append(el("div", { "data-opt": o.id }, rpFull(o, null), el("button", { class: "rp-less", onclick: () => { R.open.delete("o:" + o.id); R.open.delete("d:" + o.id); renderReport(); } }, "Show less")));
+    else inner.append(rpRow(o));
+  }
+  if (B.share) inner.append(el("button", { class: "btn ghost wide", style: "margin-top:14px", onclick: shareReport }, B.share.label || "Share"));
+  inner.append(el("div", { class: "links" }, el("button", { class: "link", onclick: showSources }, "How I found these")));
+  if (B.checked) inner.append(el("p", { class: "checked" }, B.checked));
+  v.replaceChildren(inner); v.scrollTop = top;
+}
+function showCompare() {
+  const R = state.report, nm = rpNight(), opts = rpOrder(R.data.body.options);
+  const t = el("table", { class: "cmp" }, el("tr", {}, el("th"), el("th", {}, "DRIVE"), el("th", {}, "FOR TWO"), el("th", {}, "RATING"), el("th", {}, String(nm.label || "").slice(0, 3).toUpperCase())),
+    opts.map(o => { const h = rpHours(o); return el("tr", { class: h.open ? "" : "closed" }, el("td", { class: "nm" }, o.name), el("td", {}, o.drive && o.drive.min != null ? o.drive.min + "m" : "—"),
+      el("td", {}, rpMoney(o.for_two)), el("td", {}, o.rating ? o.rating.value + "★" : "—"), el("td", {}, !h.open ? "Closed" : (o.booking || {}).method === "walk-in" ? "Walk-in" : "Book")); }));
+  openRepSheet("Side by side", [el("div", { style: "overflow-x:auto" }, t), el("p", { class: "checked" }, nm.label + ". " + (R.data.body.order_note || "Open that night first, then closest") + ". Costs are estimates for two, all in.")]);
+}
+function showSources() {
+  const B = state.report.data.body;
+  openRepSheet("How I found these", [B.method ? el("p", { style: "color:var(--mut);font-size:14px;margin-bottom:12px" }, B.method) : null,
+    el("ul", { class: "srcl" }, B.options.map(o => el("li", {}, el("b", {}, o.name), el("br"), (o.sources || []).map(s => rpLink(s.label || "Source", s.url)),
+      (o.photos || []).some(p => p.credit) ? el("div", { style: "font-size:12.5px;color:var(--dim)" }, "Photos: " + [...new Set(o.photos.map(p => p.credit).filter(Boolean))].join("; ")) : null))),
+    B.not_checked ? el("p", { class: "checked" }, B.not_checked) : null].filter(Boolean));
+}
+// Share the night's places as plain text through Telegram's share sheet (he picks the chat); elsewhere the phone's share, else copy.
+function shareReport() {
+  const R = state.report, B = R.data.body, nm = rpNight(), open = rpOrder(B.options).filter(o => rpHours(o).open);
+  const lines = [((B.share && B.share.intro) || B.heading || R.data.title || "Options") + (nm.label ? ", " + nm.label : "") + ":"];
+  for (const o of open) lines.push("• " + o.name + " (" + [o.area, rpDrive(o), rpMoney(o.for_two) + " for two", o.rating ? o.rating.value + "★" : null, rpHours(o).text].filter(Boolean).join(" · ") + ")" + (o.website ? "\n  " + o.website : ""));
+  const text = lines.join("\n");
+  try { if (tg && tg.openTelegramLink) { tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(text)); return; } } catch (e) {}
+  try { if (navigator.share) { navigator.share({ text }).catch(() => {}); return; } } catch (e) {}
+  toast(copyText(text) ? "Copied. Paste it into your chat." : "Couldn't open sharing here.");
+}
+$("#repSheetDone").onclick = closeRepSheet;
+$("#repSheet").addEventListener("click", e => { if (e.target.id === "repSheet") closeRepSheet(); });
+// The item buttons when the card has no pick: the card's own button opens the report; only the "not yet" kind of choice stays.
+function noPickButtons(it) {
+  const c = cardOf(it), box = el("div", { class: "acts" });
+  if (c.report_slug) box.append(el("button", { class: "btn main wide", onclick: () => openReport(c.report_slug) }, (c.primary && c.primary.label) || "See the options"));
+  for (const o of choicesFor(it).list.filter(x => DEFER.has(x.code))) box.append(el("button", { class: "btn ghost", onclick: () => choose(it, o, "card") }, choiceLabel(o)));
+  return box.childNodes.length ? box : null;
+}
 
 // ---------- an item page ----------
 function openItem(id) {
@@ -973,12 +1164,12 @@ function renderItem(gr) {
   // The do-it area: the opened-action panel, or the buttons this group offers.
   if (h) body.append(handPanel(h));
   else if (isAsk) {
-    const ch = choiceButtons(it); if (ch) body.append(ch);
+    const ch = c && c.no_pick ? noPickButtons(it) : choiceButtons(it); if (ch) body.append(ch);
     const s = c && c.silence ? c.silence : String(it.way_out || "").trim(); if (s) body.append(el("p", { class: "silence" }, s));
   } else if (g === "parked") {
     // A parked decision keeps its buttons (he may act early, e.g. pay before Monday); bringing it back is the quiet option.
     const back = it.bring_back_at ? dayLabel(it.bring_back_at).replace(/^T/, "t") + " " + clock(it.bring_back_at) : "later";
-    const ch = it.ask ? choiceButtons(it) : null;
+    const ch = it.ask ? (c && c.no_pick ? noPickButtons(it) : choiceButtons(it)) : null;
     if (ch) {
       body.append(ch, el("p", { class: "silence" }, "Set to come back " + back + ". You can act on it now if you like."));
       body.append(el("button", { class: "more", onclick: () => choose(it, { code: "unhold", label: "Bring it back now" }, "card") }, "Bring it back now"));
@@ -1001,7 +1192,7 @@ function renderItem(gr) {
     }
   }
   inner.append(el("div", { class: "card" + (isAsk && pk ? " pick" : "") }, body));
-  if (c && c.report_slug) { const m = (state.make || []).find(m => m.slug === c.report_slug); if (m) inner.append(el("button", { class: "btn ghost wide", onclick: () => openReader(m) }, "Open the full report")); }
+  if (c && c.report_slug && !(c.no_pick && (isAsk || g === "parked"))) inner.append(el("button", { class: "btn ghost wide", onclick: () => openReport(c.report_slug) }, "Open the full report"));
   const sb = standBox(it); if (sb) inner.append(el("div", { class: "section" }, el("h2", {}, "Where it stands")), sb);
   if (state.v5 && g) inner.append(askBox(it));
   inner.append(el("div", { class: "links" }, g ? el("button", { class: "link", onclick: () => openNote(it, null) }, state.drafts[it.id] ? "Finish your note to Cedric…" : "Tell Cedric something…") : null,
@@ -1313,7 +1504,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) load
 const panes = $("#panes");
 function showPane(k, smooth) {
   const i = PANES.indexOf(k); if (i < 0) return;
-  if (state.view) closeItemQuiet(); if (state.reader) closeReader();
+  if (state.report) closeReport(); if (state.view) closeItemQuiet(); if (state.reader) closeReader();
   panes.scrollTo({ left: i * panes.clientWidth, behavior: smooth && !REDUCED() ? "smooth" : "auto" });
   setTab(k);
 }
@@ -1337,16 +1528,16 @@ panes.addEventListener("touchmove", e => {
 panes.addEventListener("touchend", () => { edgeTouch = null; }, { passive: true });
 panes.addEventListener("touchcancel", () => { edgeTouch = null; }, { passive: true });
 // An item page or the reader: a swipe right that starts at the left edge slides it back.
-for (const v of [$("#itemView"), $("#readerView")]) {
+for (const v of [$("#itemView"), $("#readerView"), $("#reportView")]) {
   let x0 = null, y0 = 0;
   v.addEventListener("touchstart", e => { const t = e.touches[0]; x0 = t.clientX < 40 ? t.clientX : null; y0 = t.clientY; }, { passive: true });
-  v.addEventListener("touchend", e => { if (x0 === null) return; const t = e.changedTouches[0]; if (t.clientX - x0 > 70 && Math.abs(t.clientY - y0) < 60) (v.id === "readerView" ? closeReader : closeItem)(); x0 = null; }, { passive: true });
+  v.addEventListener("touchend", e => { if (x0 === null) return; const t = e.changedTouches[0]; if (t.clientX - x0 > 70 && Math.abs(t.clientY - y0) < 60) (v.id === "readerView" ? closeReader : v.id === "reportView" ? closeReport : closeItem)(); x0 = null; }, { passive: true });
 }
 document.querySelectorAll(".dock .p").forEach(t => t.addEventListener("click", () => { haptic(); showPane(t.dataset.tab, true); }));
 $("#chatBtn").onclick = () => { haptic(); if (tg) tg.close(); };
 function syncBack() {
   if (!tg || !tg.BackButton) return;
-  (state.sheet || !$("#settingsSheet").hidden || state.view || state.reader) ? tg.BackButton.show() : tg.BackButton.hide();
+  (state.sheet || !$("#settingsSheet").hidden || !$("#repSheet").hidden || state.view || state.reader || state.report) ? tg.BackButton.show() : tg.BackButton.hide();
 }
 if (tg) {
   tg.ready(); tg.expand();
@@ -1356,6 +1547,7 @@ if (tg) {
   try { tg.setBottomBarColor && tg.setBottomBarColor("#0B0D12"); } catch (e) {}
   tg.BackButton && tg.BackButton.onClick(() => {
     if (state.sheet) closeNote(false); else if (!$("#settingsSheet").hidden) closeSettings();
+    else if (!$("#repSheet").hidden) closeRepSheet(); else if (state.report) closeReport();
     else if (state.reader) closeReader(); else if (state.view) closeItem();
   });
 }
