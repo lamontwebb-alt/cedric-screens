@@ -638,13 +638,13 @@ function renderNow(gr) {
     cp.append(noteHeader(fx), ...fx.items.map(noteRow));
     const first = fx.items.find(f => !f.cleared);
     if (first) cp.append(el("div", { class: "note-f" }, el("span", {}, ...fp("Start with the one that matters most.", "Open one to see the details.")),
-      el("button", { class: "pill", onclick: () => openItem(first.it.id) }, ...fp(cardOf(first.it) ? "Start with " + shortTitle(headline(first.it), 18) : "Start", "Start"), " ›")));
+      el("button", { class: "pill", onclick: () => openItem(first.it.id) }, "Start ›")));
     else cp.append(el("div", { class: "note-f" }, el("span", {}, "All three are cleared."), el("button", { class: "pill quiet", onclick: () => showPane("open", true) }, "See what's open ›")));
   } else {
     const n = gr.with_cedric.length + gr.cedric.length;
     cp.append(el("div", { class: "finish" }, el("div", { class: "fin-t" }, "Nothing needs you right now."), el("p", {}, n ? n + " with Cedric. I'll text you when anything's ready." : "All clear.")));
   }
-  const jobs = gr.asks.filter(x => x.plan && x.plan.job);
+  const jobs = gr.asks.filter(x => x.plan && x.plan.job && !/^TEST\b/i.test(x.title || ""));  // test cards never show to him
   if (jobs.length) cp.append(el("button", { class: "wbline", onclick: () => openItem(jobs[0].id) }, el("span", { class: "d" }),
     el("span", { class: "t" }, ...fp("Workbench: " + shortTitle(jobs[0].title, 40) + " needs " + (jobs.length > 1 ? "your answers" : "one answer"), "Workbench: " + (jobs.length > 1 ? jobs.length + " jobs need an answer" : "a job needs one answer"))), el("span", {}, "›")));
   main.append(cp);
