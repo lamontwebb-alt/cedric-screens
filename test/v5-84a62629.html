@@ -56,7 +56,7 @@ a{color:inherit;text-decoration:none}
 @media (prefers-reduced-motion:reduce){.view,.view.in{transition:none}}
 
 /* top bar */
-.top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:12px;min-height:60px}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:12px;min-height:60px;padding-top:calc(12px + var(--tg-safe-area-inset-top,0px) + var(--tg-content-safe-area-inset-top,0px))}
 .top .nm{font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px}
 .top .back{font-weight:600;font-size:15px;min-height:44px;display:flex;align-items:center;gap:2px;color:var(--ink);flex:none}
 .top .ttl{font:500 11.5px var(--mono);letter-spacing:.07em;color:var(--mut);text-transform:uppercase;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -285,7 +285,7 @@ table.cmp tr.closed td{color:var(--dim)}
 .checked{font:400 11.5px/1.5 var(--mono);color:var(--dim);margin-top:10px;overflow-wrap:anywhere}
 
 /* dock */
-.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(448px,calc(100% - 32px));display:flex;gap:8px;z-index:30}
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + max(env(safe-area-inset-bottom,0px), var(--tg-safe-area-inset-bottom,0px)));width:min(448px,calc(100% - 32px));display:flex;gap:8px;z-index:30}
 .dock .pills{flex:1;display:flex;background:var(--raise);border:1px solid var(--line);border-radius:999px;padding:5px}
 .dock .p{flex:1;font:600 14px var(--sans);padding:11px 0;border-radius:999px;color:var(--mut);min-height:44px;text-align:center}
 .dock .p[aria-pressed=true]{background:var(--ink);color:var(--bg)}
@@ -1541,6 +1541,9 @@ function syncBack() {
 }
 if (tg) {
   tg.ready(); tg.expand();
+  // Full screen (Telegram 8.0+): hides Telegram's header bar; its Close and menu buttons float over the top corners,
+  // so the top bars pad by Telegram's safe-area variables (see .top in the styles).
+  try { if (tg.requestFullscreen && (!tg.isVersionAtLeast || tg.isVersionAtLeast("8.0"))) tg.requestFullscreen(); } catch (e) {}
   try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
   try { tg.setHeaderColor("#0B0D12"); } catch (e) {}
   try { tg.setBackgroundColor && tg.setBackgroundColor("#0B0D12"); } catch (e) {}
