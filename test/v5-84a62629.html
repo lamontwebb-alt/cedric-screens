@@ -864,8 +864,12 @@ function rpState(o) {
 }
 function rpPhotos(o) {
   const ph = (o.photos || []).filter(p => p && /^https:\/\//.test(p.url || p)); if (!ph.length) return null;
-  return el("div", { class: "photos" }, ph.map((p, i) => el("figure", {}, el("img", { src: p.url || p, alt: o.name || "", loading: "lazy" }),
-    p.credit ? el("figcaption", {}, "Photo: " + p.credit) : null, ph.length > 1 ? el("span", { class: "pc" }, (i + 1) + "/" + ph.length) : null)));
+  // Tapping a photo opens the place's own website (owner, 2026-10-25: "at least 1 photo that links to the web site").
+  const site = /^https:\/\//.test(o.website || "") ? o.website : /^https:\/\//.test(o.maps_url || "") ? o.maps_url : null;
+  return el("div", { class: "photos" }, ph.map((p, i) => el("figure", site ? { style: "cursor:pointer", title: "Open the website", onclick: () => { haptic(); openTarget(site); } } : {},
+    el("img", { src: p.url || p, alt: o.name || "", loading: "lazy" }),
+    el("figcaption", {}, [p.credit ? "Photo: " + p.credit : null, site ? "Tap for the website ↗" : null].filter(Boolean).join(" · ")),
+    ph.length > 1 ? el("span", { class: "pc" }, (i + 1) + "/" + ph.length) : null)));
 }
 const rpQuote = q => q && q.text ? el("blockquote", { class: "quote" }, "“" + q.text + "”", el("cite", {}, el("span", {}, [q.source, q.age].filter(Boolean).join(", ")))) : null;
 function rpMain(o) {
