@@ -737,8 +737,8 @@ function renderNow(gr) {
       const pa = nowAction(first), x = handoffOf(first.it);
       // A long card label falls back to the choice's own word (Pay, Call) so the pill stays one line.
       const lbl = pa && (pa.label.length <= 26 ? pa.label : pa.choice && choiceLabel(pa.choice).length <= 26 ? choiceLabel(pa.choice) : shortTitle(pa.label, 26));
-      cp.append(el("div", { class: "note-f" }, el("span", {}, ...fp("Start with the one that matters most.", pa ? "Or open one to see the details." : "Open one to see the details.")),
-        pa ? el("button", { class: "pill", onclick: () => { pa.run("now"); if (x && x.kind !== "make") openItem(first.it.id); } }, ...fp(lbl + " ›", plainLabel(lbl) + " ›")) : null));
+      if (pa) cp.append(el("div", { class: "note-f" }, el("span", {}, "I'd do number " + (fx.items.indexOf(first) + 1) + " first."),
+        el("button", { class: "pill", onclick: () => { pa.run("now"); if (x && x.kind !== "make") openItem(first.it.id); } }, ...fp(lbl + " ›", plainLabel(lbl) + " ›"))));
     }
     else cp.append(el("div", { class: "note-f" }, el("span", {}, "All three are cleared."), el("button", { class: "pill quiet", onclick: () => showPane("open", true) }, "See what's open ›")));
   } else {
@@ -747,10 +747,14 @@ function renderNow(gr) {
   }
   const jobs = gr.asks.filter(x => x.plan && x.plan.job && !/^TEST\b/i.test(x.title || ""));  // test cards never show to him
   if (jobs.length) {
-    const many = jobs.length > 1;
-    const line = many ? "Workbench has " + jobs.length + " questions for you" : jobs[0].ask ? "Workbench asks: " + askLine(jobs[0].ask) : "Workbench: " + shortTitle(jobs[0].title, 40) + " needs one answer";
-    cp.append(el("button", { class: "wbline", onclick: () => openItem(jobs[0].id) }, el("span", { class: "d" }),
-      el("span", { class: "t" }, ...fp(line, many ? "Workbench has " + jobs.length + " questions for you" : "Workbench has a question for you")), el("span", {}, "›")));
+    const isQ = j => { const c = cardOf(j); return !!(c && c.private_label === "A question from a job") && /\?/.test(j.ask || ""); };
+    const qs = jobs.filter(isQ), j0 = qs[0] || jobs[0], many = jobs.length > 1;
+    const what = "Your lookup: " + shortTitle(String(j0.title || "").replace(/^(Find out about|Find|Look up)\s+/i, ""), 44);
+    const line = qs.length > 1 ? "The Workbench has " + qs.length + " questions for you" : qs.length ? "The Workbench asks: " + askLine(j0.ask)
+      : what + (/pause/i.test(j0.ask || "") ? ". Paused; open it to see what it found." : ". I'm working on it.");
+    const priv = qs.length ? "The Workbench has a question for you" : "A lookup is in progress";
+    cp.append(el("button", { class: "wbline", onclick: () => openItem(j0.id) }, el("span", { class: "d" }),
+      el("span", { class: "t" }, ...fp(line + (many && qs.length < 2 ? " (+" + (jobs.length - 1) + " more)" : ""), priv)), el("span", {}, "›")));
   }
   main.append(cp);
   // The quiet status line.
@@ -1175,7 +1179,7 @@ const DEFAULT_CHOICES = [{ code: "later", label: "Later" }, { code: "done", labe
 function choicesFor(it) {
   const given = Array.isArray(it.choices) && it.choices.length ? it.choices : null;
   if (!given) return { list: DEFAULT_CHOICES, primary: DEFAULT_CHOICES[1] };
-  const used = new Set((it.thread || []).filter(e => e.code && e.code !== "note" && e.code !== "ask" && e.status !== "cancelled" && e.status !== "superseded").map(e => e.code));
+  const used = new Set((it.thread || []).filter(e => e.code && e.code !== "note" && e.code !== "ask" && !/^job:/.test(e.code) && e.status !== "cancelled" && e.status !== "superseded").map(e => e.code));
   const list = given.filter(c => !used.has(c.code));
   const designated = given.find(c => c.primary) || given[given.length - 1];
   return { list, primary: list.includes(designated) ? designated : null };
