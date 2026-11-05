@@ -502,6 +502,13 @@ function when(iso) {
 function clock(iso) { return new Date(iso).toLocaleTimeString("en-US", { timeZone: NY, hour: "numeric", minute: "2-digit" }).replace(":00", ""); }
 function backLine(it) { return it.bring_back_at ? "Back " + (it._backLabel || dayLabel(it.bring_back_at)) + " " + clock(it.bring_back_at) : null; }
 function dueText(it) { return it.due ? (Date.parse(it.due) < nowMs() ? "Was due " : "Due ") + shortDay(it.due) : null; }
+// An ask whose day has passed never leaves for being late (owner rule 2026-11-04): it asks whether it got done; only his tap closes it.
+const pastDay = it => !!(it && it.due && it.ask && nyDay(Date.parse(it.due)) < nyDay(nowMs()));
+function pastLine(it) {
+  const d = shortDay(it.due) === "yesterday" ? "yesterday" : new Date(Date.parse(it.due)).toLocaleDateString("en-US", { timeZone: NY, weekday: "short", month: "short", day: "numeric" }).replace(",", "");
+  return "This was for " + d + ". Did it get done?";
+}
+const PAST_DONE = { code: "done", label: "Done already" }, PAST_STILL = { code: "still", label: "Still to do" };
 function laterLabel() { return (state.tasks && state.tasks.later && state.tasks.later.label) || "Later"; }
 
 // ---------- what the screen shows = last server read + optimistic changes (same rules as v4) ----------
@@ -687,12 +694,13 @@ function noteRow(f, i) {
   // A tap he already made shows on the row itself (render-critique 2026-11-01: the Now page gave no lasting sign of a tap).
   const pend = f.g === "with_cedric" && it.pending && it.pending.code !== "ask" ? it.pending : null;
   const sent = pend ? (pend.code === "note" ? "Your note is with me." : "You chose " + (pend.label || pend.code) + ". " + (isJobCode(pend.code) ? "The Workbench is running it." : pend.status === "claimed" ? "I'm on it." : "I have it.")) : "";
-  const sub = f.cleared ? (f.g === "checking" ? "Watching for it. I'll confirm when it shows up." : "Done.") : sent ? sent : pk ? "My pick: " + pk : c && c.figure_caption ? c.figure_caption : (it.why || "").split("\n")[0];
+  const past = !f.cleared && !sent && pastDay(it);
+  const sub = f.cleared ? (f.g === "checking" ? "Watching for it. I'll confirm when it shows up." : "Done.") : sent ? sent : past ? pastLine(it) : pk ? "My pick: " + pk : c && c.figure_caption ? c.figure_caption : (it.why || "").split("\n")[0];
   return el("button", { class: "nl" + (i === 0 && !f.cleared ? " first" : "") + (f.cleared ? " cleared" : ""), "data-id": it.id, onclick: () => openItem(it.id) },
     el("span", { class: "no" }, f.cleared ? "✓" : "0" + (i + 1)),
     el("span", { class: "tt" }, ...fp(headline(it), privLabel(it))),
     fig && !f.cleared && (/\d/.test(fig) || fig.length <= 12) ? el("span", { class: "fg hide-p" }, fig) : el("span"),
-    el("span", { class: "ss" }, ...fp(sub, f.cleared ? (f.g === "checking" ? "Watching." : "Done.") : sent ? "Sent. I have it." : pk ? "My pick is ready." : "Open it to see.")));
+    el("span", { class: "ss" }, ...fp(sub, f.cleared ? (f.g === "checking" ? "Watching." : "Done.") : sent ? "Sent. I have it." : past ? "Was for an earlier day." : pk ? "My pick is ready." : "Open it to see.")));
 }
 // The Now pill: the first uncleared item's one real action (Pay, Call, Continue), the same action its page's amber button runs.
 function nowAction(f) {
@@ -790,8 +798,9 @@ function rowMeta(x, g) {
 function rowSub(x, g) {
   if (g === "checking") return checkText(x);
   if (g === "waiting") return "Waiting on " + (x.waiting_on || "someone else");
+  if ((g === "asks" || g === "yours" || g === "rest") && pastDay(x)) return pastLine(x);
   if (g === "with_cedric") return x.pending && x.pending.code === "note" ? "Your note: " + (x.pending.note || "") : x.pending ? "You chose: " + (x.pending.label || x.pending.code) : "";
-  const pk = pickText(x); if (pk) return "My pick: " + pk;
+  const pk = pickText(x); if (pk && !pastDay(x)) return "My pick: " + pk;
   const c = cardOf(x); if (c && c.no_pick) return c.figure_caption || "";
   return x.detail ? String(x.detail).split("\n")[0] : "";
 }
@@ -839,7 +848,9 @@ function needRow(x, g, amber) {
   const row = el("div", { class: "need" + (tap ? " sent" : ""), "data-id": x.id, role: "button", tabindex: "0", onclick: () => openItem(x.id),
     onkeydown: e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openItem(x.id); } } });
   row.append(el("div", { class: "n-top" }, el("div", { class: "tt" }, ...fp(listTitle(x), privLabel(x))), fig ? el("div", { class: "fg hide-p" }, fig) : null));
-  if (due) row.append(el("div", { class: "n-when" + (past ? " past" : "") }, el("i", { class: "nd" + (past ? " no" : "") }), due));
+  const was = !tap && pastDay(x);   // a day that passed asks, it doesn't alarm (owner rule 2026-11-04)
+  if (was) row.append(el("div", { class: "n-when" }, el("i", { class: "nd" }), pastLine(x)));
+  else if (due) row.append(el("div", { class: "n-when" + (past ? " past" : "") }, el("i", { class: "nd" + (past ? " no" : "") }), due));
   if (tap) {
     row.append(el("div", { class: "n-chose" }, ...fp("You chose: " + (tap.label || tap.code), "Sent.")), el("div", { class: "n-quiet" }, quietText(x, g)));
     return row;
@@ -847,7 +858,8 @@ function needRow(x, g, amber) {
   const pk = pickText(x), c = cardOf(x), pa = primaryAction(x);
   const lbl = pa && (pa.label.length <= 26 ? pa.label : pa.choice && choiceLabel(pa.choice).length <= 26 ? choiceLabel(pa.choice) : shortTitle(pa.label, 26));
   const line = el("div", { class: "n-pick" });
-  if (pk) line.append(el("div", { class: "say hide-p" }, el("i", { class: "pk" }), el("span", {}, el("span", { class: "k" }, "My pick: "), pk)));
+  if (pk && !was) line.append(el("div", { class: "say hide-p" }, el("i", { class: "pk" }), el("span", {}, el("span", { class: "k" }, "My pick: "), pk)));
+  else if (was) line.append(el("div", { class: "say" }, el("span", {}, "Done, or still to do?")));
   else if (c && c.no_pick && c.figure_caption) line.append(el("div", { class: "say hide-p" }, el("i", { class: "pk" }), el("span", {}, c.figure_caption)));
   if (pa) line.append(el("button", { class: "act" + (amber ? " main" : ""), onclick: e => { e.stopPropagation(); runRowAction(x, pa); } }, ...fp(lbl, plainLabel(lbl))));
   if (line.childNodes.length) row.append(line);
@@ -1177,6 +1189,11 @@ function similar(label, alt) {
 function choiceLabel(c) { return c.code === "later" && (!c.label || /^later$/i.test(c.label)) ? laterLabel() : c.label; }
 const DEFAULT_CHOICES = [{ code: "later", label: "Later" }, { code: "done", label: "Done", primary: true }];
 function choicesFor(it) {
+  if (pastDay(it)) {
+    // Its real action stays when it has one (Call, Pay); otherwise no pick between done and still to do.
+    const real = handoffOf(it) && Array.isArray(it.choices) ? it.choices.find(c => c.primary) : null;
+    return { list: real ? [real, PAST_DONE, PAST_STILL] : [PAST_DONE, PAST_STILL], primary: real || null };
+  }
   const given = Array.isArray(it.choices) && it.choices.length ? it.choices : null;
   if (!given) return { list: DEFAULT_CHOICES, primary: DEFAULT_CHOICES[1] };
   const used = new Set((it.thread || []).filter(e => e.code && e.code !== "note" && e.code !== "ask" && !/^job:/.test(e.code) && e.status !== "cancelled" && e.status !== "superseded").map(e => e.code));
@@ -1196,7 +1213,7 @@ function primaryAction(it) {
 // The buttons, exactly as v4 decides them; amber only on the do-it button.
 function choiceButtons(it) {
   const { list, primary } = choicesFor(it), others = list.filter(c => c !== primary);
-  const alt = String(it.alternative || "").trim();
+  const alt = pastDay(it) ? "" : String(it.alternative || "").trim();
   if (alt && primary) {
     let i = others.findIndex(c => c.alt);
     if (i < 0) i = others.findIndex(c => !DEFER.has(c.code) && !/^(grant|revoke):/.test(c.code));
@@ -1221,6 +1238,7 @@ function stateLine(it, g) {
   if (g === "cedric") return el("div", { class: "state" }, el("span", { class: "d ok" }), el("span", {}, "I'm working on this. Nothing needed from you yet."));
   if (g === "with_cedric") return el("div", { class: "state" }, el("span", { class: "d mut" }), el("span", {}, quietText(it, g)));
   if (!g) return el("div", { class: "state" }, el("span", { class: "d ok" }), el("span", {}, "This one is closed. Nothing left to do here."));
+  if (pastDay(it)) return el("div", { class: "state" }, el("span", { class: "d mut" }), el("span", {}, el("b", {}, pastLine(it))));
   if (it.due && Date.parse(it.due) < nowMs()) return el("div", { class: "state" }, el("span", { class: "d no" }), el("span", {}, dueText(it)));
   return null;
 }
@@ -1336,7 +1354,7 @@ function renderItem(gr) {
   inner.append(head);
 
   const body = el("div", { class: "body" }), pk = pickText(it), fig = figureOf(it);
-  if (pk && (isAsk || g === "parked")) body.append(el("div", { class: "mark" }, "My pick"), el("div", { class: "cname" }, pk));
+  if (pk && (isAsk || g === "parked") && !pastDay(it)) body.append(el("div", { class: "mark" }, "My pick"), el("div", { class: "cname" }, pk));
   else if (!isAsk && it.ask && !c) body.append(el("div", { class: "cname" }, it.title));
   if (fig) body.append(el("div", { class: "big" + (/\d/.test(fig) ? "" : " word") }, fig, c && c.figure_caption ? el("small", {}, c.figure_caption) : null));
   const h = state.hand && state.hand.item.id === it.id ? state.hand : null;
@@ -1351,7 +1369,7 @@ function renderItem(gr) {
   if (h) body.append(handPanel(h));
   else if (isAsk) {
     const ch = c && c.no_pick ? noPickButtons(it) : choiceButtons(it); if (ch) body.append(ch);
-    const s = c && c.silence ? c.silence : String(it.way_out || "").trim(); if (s) body.append(el("p", { class: "silence" }, s));
+    const s = pastDay(it) ? "It stays on your list until you tell me." : c && c.silence ? c.silence : String(it.way_out || "").trim(); if (s) body.append(el("p", { class: "silence" }, s));
   } else if (g === "parked") {
     // A parked decision keeps its buttons (he may act early, e.g. pay before Monday); bringing it back is the quiet option.
     const back = it.bring_back_at ? dayLabel(it.bring_back_at).replace(/^T/, "t") + " " + clock(it.bring_back_at) : "later";
