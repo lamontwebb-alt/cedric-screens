@@ -859,9 +859,10 @@ function needRow(x, g, amber) {
   const lbl = pa && (pa.label.length <= 26 ? pa.label : pa.choice && choiceLabel(pa.choice).length <= 26 ? choiceLabel(pa.choice) : shortTitle(pa.label, 26));
   const line = el("div", { class: "n-pick" });
   if (pk && !was) line.append(el("div", { class: "say hide-p" }, el("i", { class: "pk" }), el("span", {}, el("span", { class: "k" }, "My pick: "), pk)));
-  else if (was) line.append(el("div", { class: "say" }, el("span", {}, "Done, or still to do?")));
-  else if (c && c.no_pick && c.figure_caption) line.append(el("div", { class: "say hide-p" }, el("i", { class: "pk" }), el("span", {}, c.figure_caption)));
-  if (pa) line.append(el("button", { class: "act" + (amber ? " main" : ""), onclick: e => { e.stopPropagation(); runRowAction(x, pa); } }, ...fp(lbl, plainLabel(lbl))));
+  else if (c && c.no_pick && c.figure_caption && !was) line.append(el("div", { class: "say hide-p" }, el("i", { class: "pk" }), el("span", {}, c.figure_caption)));
+  // A past-day row answers its own question on the row (engine review 2026-11-04): Done already / Still to do; its call or payment is inside.
+  if (was) [PAST_STILL, PAST_DONE].forEach((o, i) => line.append(el("button", { class: "act", onclick: e => { e.stopPropagation(); choose(x, o, "open"); } }, o.label)));
+  else if (pa) line.append(el("button", { class: "act" + (amber ? " main" : ""), onclick: e => { e.stopPropagation(); runRowAction(x, pa); } }, ...fp(lbl, plainLabel(lbl))));
   if (line.childNodes.length) row.append(line);
   return row;
 }
