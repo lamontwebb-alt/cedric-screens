@@ -1500,6 +1500,20 @@ function setPrivate(on) { state.priv = on; app.classList.toggle("private", on); 
 function togglePrivate() { setPrivate(!state.priv); haptic(); }
 
 // ---------- taps (same calls as v4) ----------
+// Still to do and the handoff buttons need no judgment: the database finishes them at once (cedric_screen_finish,
+// 2026-11-13), so the card shows Cedric's answer in about a second. Any failure is ignored: the tower finishes the same
+// action about 20 seconds later through the same database function.
+const isPlainTap = (code, label) => code === "handoff" || (code === "still" && String(label || "").trim().toLowerCase() === "still to do");
+async function finishPlain(temp, it) {
+  if (!temp || !temp.action_id || temp.status !== "queued" || !isPlainTap(temp.code, temp.label)) return;
+  try {
+    const r = await rpc("cedric_screen_finish", { p_action_id: temp.action_id });
+    if (!r || r.handled !== true || !["done", "asked", "failed"].includes(r.status)) return;
+    temp.status = r.status; if (typeof r.answer === "string") temp.answer = r.answer;
+    const l = r.loop;
+    if (it && l && l.id === it.id && Number.isInteger(l.revision)) { it.revision = l.revision; if (typeof l.due === "string") it.due = l.due; }
+  } catch (e) {}
+}
 async function queueAction(it, c, onFail, where, word) {
   const o = begin(it.id);
   const temp = { action_id: null, code: c.code, label: c.label, note: c.note || null, status: "queued", answer: null, created_at: new Date(nowMs()).toISOString(), _temp: true };
@@ -1514,6 +1528,7 @@ async function queueAction(it, c, onFail, where, word) {
     settle(o); o.add = o.add.filter(x => x !== temp); hid.forEach(id => o.hide.delete(id)); onFail && onFail();
     toast(e.message === "not-allowed" ? "This only works from my chat in Telegram. Close it and open it again." : "Didn't send. Check your connection and try again.");
   }
+  await finishPlain(temp, it);
   render(); loadTasks();
 }
 async function choose(it, c, where) {
@@ -1613,6 +1628,7 @@ async function recordHandoff(h) {
     if (r && r.loop && r.loop.stage) { h.checking = r.loop.stage === "checking"; if (h.checking) h.o.patch = { ...h.o.patch, stage: "checking", status: "waiting_world", owner: "cedric" }; }
     settle(h.o); haptic("ok");
   } catch (e) { settle(h.o); h.o.add = h.o.add.filter(x => x !== h.temp); h.err = true; }
+  await finishPlain(h.temp, h.item);
   render(); loadTasks();
 }
 function closeHand() { state.hand = null; haptic(); closeItem(); }
