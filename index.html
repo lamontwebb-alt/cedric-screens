@@ -967,6 +967,120 @@ textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:1
   outline-offset: 2px;
 }
 .o-desk .hold-h .cnt{padding-right:6px}
+/* Today's time rail and the Now screen's link to Open (2026-11-13) */
+.o-rail {
+  position: relative;
+}
+
+.o-rail::before {
+  content: "";
+  position: absolute;
+  left: 52px;
+  top: 27px;
+  bottom: 14px;
+  width: 1px;
+  background: var(--line);
+  pointer-events: none;
+}
+
+.o-rail > .o-hero {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.o-rail > .o-row {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+}
+
+.o-rail-cell {
+  position: relative;
+  align-self: stretch;
+  min-width: 0;
+  padding: 2px 12px 0 0;
+  color: var(--mut);
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  white-space: pre-line;
+}
+
+.o-rail-cell::after {
+  content: "";
+  position: absolute;
+  left: 49.5px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mut);
+  pointer-events: none;
+}
+
+.o-rail .o-kicker {
+  color: var(--mut);
+}
+
+.o-rail .o-hero h3:first-child {
+  margin-top: 0;
+}
+
+.o-more {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 4px;
+  padding: 8px 0;
+  color: var(--mut);
+  font: 400 14px/1.4 var(--sans);
+  text-align: left;
+}
+
+.o-screen .o-more:focus-visible,
+#nowMain.o-screen .greet:focus-visible,
+#nowMain.o-screen .wbline:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+#nowMain.o-screen .topline {
+  flex-wrap: nowrap;
+  align-items: center;
+  row-gap: 10px;
+}
+
+#nowMain.o-screen .eyebrow {
+  line-height: normal;
+  letter-spacing: .14em;
+}
+
+#nowMain.o-screen .week {
+  margin-top: 16px;
+}
+
+#nowMain.o-screen .week .dbar {
+  height: 20px;
+  border-radius: 5px;
+}
+
+#nowMain.o-screen .day:not(.today) .n {
+  width: auto;
+  height: auto;
+  line-height: normal;
+  margin: 2px 0 5px;
+}
+
+#nowMain.o-screen .cp > .o-section {
+  margin-top: 0;
+}
+
+#nowMain.o-screen .wbline .d {
+  background: var(--mut);
+}
+/* on the rail the time is already at the left; the hero's own "call before 5 PM" line would say it twice */
+.o-rail .o-kicker{display:none}
+.o-rail .o-hero h3{margin-top:0}
 </style>
 </head>
 <body>
@@ -1328,67 +1442,104 @@ function askLine(ask) {
   const qs = t.match(/[^.?!]+\?/g); const last = qs ? qs[qs.length - 1].trim() : "";
   return last && last.length <= 72 ? last : shortTitle(t, 60);
 }
+// The Now screen is the top of the same plan the Open screen draws (2026-11-13: the two had disagreed about what comes first).
 function renderNow(gr) {
   const main = $("#nowMain"), pane = main.parentNode, top = pane.scrollTop;
-  main.replaceChildren();
-  main.append(topBar([eyeBtn(), settingsBtn()]));
-  if (state.error) { main.append(el("div", { class: "msg" }, state.error)); return; }
-  if (!state.tasks) { main.append(el("div", { class: "msg" }, "Loading…")); return; }
-  const now = new Date(nowMs()), days = shiftDays();
-  const eb = now.toLocaleDateString("en-US", { timeZone: NY, weekday: "short", month: "short", day: "numeric" }) + " · " + now.toLocaleTimeString("en-US", { timeZone: NY, hour: "numeric", minute: "2-digit" });
-  const op = offPill(days);
-  main.append(el("div", { class: "topline" }, el("span", { class: "eyebrow" }, eb), op ? el("span", { class: "offpill" }, op) : null));
-  const g = pickGreeting();
-  main.append(el("h1", { class: "greet", title: "Tap for another", onclick: nextGreeting }, g[0], el("br"), g[1]));
-  const sl = scheduleLine(days); if (sl) main.append(el("p", { class: "greet-sub" }, sl));
-  if (days.some(d => d.kind)) {
-    main.append(el("div", { class: "week", "aria-label": "Your week" }, days.map((d, i) => el("div", { class: "day" + (i === 0 ? " today" : "") },
-      el("small", {}, DOW[dayDate(d.n).getUTCDay()]), el("div", { class: "n" }, String(dayDate(d.n).getUTCDate())),
-      el("div", { class: "dbar" + (isWork(d.kind) ? " night" : d.kind === "sleep" ? " rec" : d.kind ? "" : " unk"), title: d.kind || "not known" })))));
-    main.append(el("div", { class: "legend" }, el("span", {}, el("i", { style: "background:var(--off)" }), "Off"), el("span", {}, el("i", { style: "background:var(--night)" }), "Night shift"), el("span", {}, el("i", { style: "background:var(--sleep)" }), "Sleep")));
-  }
-  // The Note: tomorrow's three (Cedric's focus), else the first three asks; a finish line when nothing needs him.
-  const cp = el("div", { class: "cp" }), fx = focusItems(gr);
-  if (fx) {
-    cp.append(noteHeader(fx), ...fx.items.map(noteRow));
-    const first = fx.items.find(f => !f.cleared);
-    if (first) {
-      // The pill is the first item's real action when it has one (Pay, Call, Continue); without one the row itself opens the item.
-      const pa = nowAction(first), x = handoffOf(first.it);
-      // A long card label falls back to the choice's own word (Pay, Call) so the pill stays one line.
-      const lbl = pa && (pa.label.length <= 26 ? pa.label : pa.choice && choiceLabel(pa.choice).length <= 26 ? choiceLabel(pa.choice) : shortTitle(pa.label, 26));
-      if (pa) cp.append(el("div", { class: "note-f" }, el("span", {}, "I'd do number " + (fx.items.indexOf(first) + 1) + " first."),
-        el("button", { class: "pill", onclick: () => { pa.run("now"); if (x && x.kind !== "make") openItem(first.it.id); } }, ...fp(lbl + " ›", plainLabel(lbl) + " ›"))));
+
+  try {
+    main.classList.add("o-screen");
+    main.replaceChildren();
+    main.append(topBar([eyeBtn(), settingsBtn()]));
+    if (state.error) { main.append(el("div", { class: "msg" }, state.error)); return; }
+    if (!state.tasks) { main.append(el("div", { class: "msg" }, "Loading…")); return; }
+
+    const now = new Date(nowMs()), days = shiftDays();
+    const eb = now.toLocaleDateString("en-US", { timeZone: NY, weekday: "short", month: "short", day: "numeric" }) + " · " + now.toLocaleTimeString("en-US", { timeZone: NY, hour: "numeric", minute: "2-digit" });
+    const op = offPill(days);
+    main.append(el("div", { class: "topline" }, el("span", { class: "eyebrow" }, eb), op ? el("span", { class: "offpill" }, op) : null));
+
+    const g = pickGreeting();
+    main.append(el("h1", {
+      class: "greet",
+      title: "Tap for another",
+      role: "button",
+      tabindex: "0",
+      onclick: nextGreeting,
+      onkeydown: e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          nextGreeting();
+        }
+      }
+    }, g[0], el("br"), g[1]));
+
+    const sl = scheduleLine(days); if (sl) main.append(el("p", { class: "greet-sub" }, sl));
+    if (days.some(d => d.kind)) {
+      main.append(el("div", { class: "week", "aria-label": "Your week" }, days.map((d, i) => el("div", { class: "day" + (i === 0 ? " today" : "") },
+        el("small", {}, DOW[dayDate(d.n).getUTCDay()]), el("div", { class: "n" }, String(dayDate(d.n).getUTCDate())),
+        el("div", { class: "dbar" + (isWork(d.kind) ? " night" : d.kind === "sleep" ? " rec" : d.kind ? "" : " unk"), title: d.kind || "not known" })))));
+      main.append(el("div", { class: "legend" }, el("span", {}, el("i", { style: "background:var(--off)" }), "Off"), el("span", {}, el("i", { style: "background:var(--night)" }), "Night shift"), el("span", {}, el("i", { style: "background:var(--sleep)" }), "Sleep")));
     }
-    else cp.append(el("div", { class: "note-f" }, el("span", {}, "All three are cleared."), el("button", { class: "pill quiet", onclick: () => showPane("open", true) }, "See what's open ›")));
-  } else {
-    const n = gr.with_cedric.length + gr.cedric.length;
-    cp.append(el("div", { class: "finish" }, el("div", { class: "fin-t" }, "Nothing needs you right now."), el("p", {}, n ? n + " with me. I'll text you when anything's ready." : "All clear.")));
+
+    const plan = opPlan(gr, {
+      now: nowMs(),
+      shiftDays: (state.tasks.shift_days || []),
+      feeds: state.tasks.feeds
+    });
+    const section = plan.sections.find(s => s.key === "today")
+      || plan.sections.find(s => s.key === "day")
+      || plan.sections.find(s => s.key === "later");
+    const cp = el("div", { class: "cp" });
+
+    if (section) {
+      const block = oHead(section, plan, op);
+      const shownRows = section.key === "today"
+        ? section.rows
+        : section.rows.slice(0, 3);
+
+      if (section.key === "later") block.classList.add("o-later");
+      if (section.key === "today") {
+        block.append(oToday(section, plan));
+      } else {
+        shownRows.forEach((row, i) => {
+          const marker = section.key === "later"
+            ? UP(row.day - plan.t0 <= 6 ? wkName(row.day) : oDate(row.day))
+            : String(i + 1).padStart(2, "0");
+          block.append(oStandardRow(row, marker, plan.t0));
+        });
+      }
+
+      const more = plan.needCount - shownRows.length;
+      cp.append(block, oButton("o-more",
+        more ? more + " more on Open ›" : "Everything is on Open ›",
+        () => showPane("open", true)));
+    } else {
+      const n = gr.with_cedric.length + gr.cedric.length;
+      cp.append(el("div", { class: "finish" }, el("div", { class: "fin-t" }, "Nothing needs you right now."), el("p", {}, n ? n + " with me. I'll text you when anything's ready." : "All clear.")));
+    }
+
+    const jobs = gr.asks.filter(x => x.plan && x.plan.job && !/^TEST\b/i.test(x.title || ""));  // test cards never show to him
+    if (jobs.length) {
+      const isQ = j => { const c = cardOf(j); return !!(c && c.private_label === "A question from a job") && /\?/.test(j.ask || ""); };
+      const qs = jobs.filter(isQ), j0 = qs[0] || jobs[0], many = jobs.length > 1;
+      const what = "Your lookup: " + shortTitle(String(j0.title || "").replace(/^(Find out about|Find|Look up)\s+/i, ""), 44);
+      const line = qs.length > 1 ? "The Workbench has " + qs.length + " questions for you" : qs.length ? "The Workbench asks: " + askLine(j0.ask)
+        : what + (/pause/i.test(j0.ask || "") ? ". Paused; open it to see what it found." : ". I'm working on it.");
+      const priv = qs.length ? "The Workbench has a question for you" : "A lookup is in progress";
+      cp.append(el("button", { class: "wbline", onclick: () => openItem(j0.id) }, el("span", { class: "d" }),
+        el("span", { class: "t" }, ...fp(line + (many && qs.length < 2 ? " (+" + (jobs.length - 1) + " more)" : ""), priv)), el("span", {}, "›")));
+    }
+
+    main.append(cp);
+    main.append(el("p", { class: "o-count" },
+      plan.total + " open · " + plan.needCount + " need you · "
+        + plan.mineCount + " with me"));
+
+    const w = String(state.tasks.watching || "").trim(), stale = feedsList().some(f => f && f.is_stale);
+    if (w) main.append(el("p", { class: "fresh" + (stale ? " stale" : "") }, w));
+  } finally {
+    pane.scrollTop = top;
   }
-  const jobs = gr.asks.filter(x => x.plan && x.plan.job && !/^TEST\b/i.test(x.title || ""));  // test cards never show to him
-  if (jobs.length) {
-    const isQ = j => { const c = cardOf(j); return !!(c && c.private_label === "A question from a job") && /\?/.test(j.ask || ""); };
-    const qs = jobs.filter(isQ), j0 = qs[0] || jobs[0], many = jobs.length > 1;
-    const what = "Your lookup: " + shortTitle(String(j0.title || "").replace(/^(Find out about|Find|Look up)\s+/i, ""), 44);
-    const line = qs.length > 1 ? "The Workbench has " + qs.length + " questions for you" : qs.length ? "The Workbench asks: " + askLine(j0.ask)
-      : what + (/pause/i.test(j0.ask || "") ? ". Paused; open it to see what it found." : ". I'm working on it.");
-    const priv = qs.length ? "The Workbench has a question for you" : "A lookup is in progress";
-    cp.append(el("button", { class: "wbline", onclick: () => openItem(j0.id) }, el("span", { class: "d" }),
-      el("span", { class: "t" }, ...fp(line + (many && qs.length < 2 ? " (+" + (jobs.length - 1) + " more)" : ""), priv)), el("span", {}, "›")));
-  }
-  main.append(cp);
-  // The quiet status line.
-  const shown = new Set(fx ? fx.items.map(f => f.it.id) : []);
-  const more = gr.asks.concat(gr.yours).filter(x => !shown.has(x.id)).length, wait = gr.waiting.length + gr.checking.length, withC = gr.with_cedric.length;
-  main.append(el("div", { class: "statusstrip" },
-    el("button", { onclick: () => showPane("open", true) }, el("span", {}, "Ⅱ"), more ? more + " more for you" : "No other asks"),
-    wait || withC ? el("button", { onclick: () => showPane("open", true) }, el("span", {}, "◌"), withC ? withC + " with me" + (wait ? ", " + wait + " waiting" : "") : wait + " waiting") : null,
-    el("button", { onclick: () => showPane("open", true) }, "All open ↗")));
-  const rest = state.showRest && restItems().length ? 0 : restCount();
-  if (rest) main.append(el("p", { class: "restline" }, plural(rest, "bigger one is", "bigger ones are") + " waiting for your day off.", el("button", { onclick: showRest }, "Show anyway")));
-  const w = String(state.tasks.watching || "").trim(), stale = feedsList().some(f => f && f.is_stale);
-  if (w) main.append(el("p", { class: "fresh" + (stale ? " stale" : "") }, w));
-  pane.scrollTop = top;
 }
 function showRest() {
   haptic();
@@ -1614,6 +1765,29 @@ function opPlan(gr, ctx) {
   };
 }
 
+// When, today, a row should be done: only from real fields (office hours, a due time before he leaves, his 5 PM).
+function opWhen(row, plan, now) {
+  if (row.day !== plan.t0) return "";
+  if (opOffice(row.x) && plan.officeLeftToday) return "by 5 PM";
+
+  const due = new Date(row.x.due).getTime();
+  if (due > now && opDay(due) === plan.t0 && opHourOf(due) < opLeaveHour) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: opZone,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    }).formatToParts(new Date(due));
+    const part = type => parts.find(p => p.type === type).value;
+    const minutes = part("minute");
+    return "by " + part("hour")
+      + (minutes === "00" ? "" : ":" + minutes)
+      + " " + part("dayPeriod");
+  }
+
+  return plan.freeUntilLeave ? "before 5 PM" : "today";
+}
+
 function opNumber(n) {
   return n >= 1 && n <= 12
     ? ["one", "two", "three", "four", "five", "six", "seven", "eight",
@@ -1796,8 +1970,8 @@ function oSection(title, notes = []) {
   );
 }
 
-// Render plan metadata directly so placement and ordering stay in opPlan.
-function oStandardRow(row, marker, t0) {
+// Rows and the hero take an optional rail label: on Today the time replaces the number (owner asked for a timeline, 2026-11-13).
+function oStandardRow(row, marker, t0, railLabel) {
   const { x } = row;
   const card = cardOf(x);
   const pa = primaryAction(x);
@@ -1821,7 +1995,9 @@ function oStandardRow(row, marker, t0) {
   }
 
   return oTapRow("o-row", x,
-    el("span", { class: "o-no" }, marker),
+    railLabel !== undefined
+      ? el("span", { class: "o-rail-cell" }, railLabel.replace(/ (?=\d)/, "\n"))
+      : el("span", { class: "o-no" }, marker),
     el("div", { class: "o-body" },
       el("div", { class: "o-tt" }, fp(listTitle(x), privLabel(x))),
       tags.length ? el("div", { class: "o-tags" }, tags) : null,
@@ -1834,8 +2010,7 @@ function oStandardRow(row, marker, t0) {
   );
 }
 
-// Give today's first item its full action and the preferred deferral choice.
-function oHero(row) {
+function oHero(row, railLabel) {
   const { x } = row;
   const card = cardOf(x);
   const pa = primaryAction(x);
@@ -1844,6 +2019,7 @@ function oHero(row) {
     || choices.find(c => c.code === "still");
   const subtitle = (pastDay(x) ? "" : pickText(x)) || (card && card.figure_caption);
   const actions = [];
+  const inRail = railLabel !== undefined;
 
   if (pa) {
     actions.push(oButton("pill",
@@ -1855,17 +2031,65 @@ function oHero(row) {
       () => choose(x, move, "open")));
   }
 
-  return oTapRow("o-hero", x,
-    el("div", { class: "o-kicker" },
-      "01",
-      x.office_label
-        ? el("span", { class: "hide-p" }, " · " + x.office_label)
-        : null
-    ),
+  const kicker = inRail
+    ? (x.office_label
+        ? el("div", { class: "o-kicker hide-p" }, x.office_label)
+        : null)
+    : el("div", { class: "o-kicker" },
+        "01",
+        x.office_label
+          ? el("span", { class: "hide-p" }, " · " + x.office_label)
+          : null
+      );
+  const content = [
+    kicker,
     el("h3", {}, fp(headline(x), privLabel(x))),
     subtitle ? el("p", { class: "hide-p" }, subtitle) : null,
     actions.length ? el("div", { class: "o-actions" }, actions) : null
-  );
+  ];
+
+  if (inRail) {
+    return oTapRow("o-hero", x,
+      el("span", { class: "o-rail-cell" }, railLabel.replace(/ (?=\d)/, "\n")),
+      el("div", { class: "o-body" }, content));
+  }
+  return oTapRow("o-hero", x, ...content);
+}
+
+function oToday(section, plan) {
+  const now = nowMs();
+  return el("div", { class: "o-rail" },
+    section.rows.map((row, i) => {
+      const label = opWhen(row, plan, now);
+      return i === 0
+        ? oHero(row, label)
+        : oStandardRow(row, "", plan.t0, label);
+    }));
+}
+
+function oHead(section, plan, off) {
+  let title;
+  let notes;
+
+  if (section.key === "today") {
+    title = "Today";
+    // On a work day the limit that matters is his own: free until 5, then getting ready.
+    notes = [plan.freeUntilLeave ? "You're free until 5" : plan.officeLeftToday ? "Offices open until 5" : "", off];
+  } else if (section.key === "day") {
+    title = wkName(section.day, true);
+    const kindNote = {
+      off: "Your day off",
+      sleep: "Off, after you sleep",
+      shift: "Before your shift",
+      work: "Before your shift"
+    }[section.kind] || "";
+    notes = [kindNote, oDate(section.day, true)];
+  } else {
+    title = "After that";
+    notes = ["Each on its day"];
+  }
+
+  return oSection(title, notes);
 }
 
 // The question as Cedric wrote it on the item, when it is one short question; else the item's headline.
@@ -2113,39 +2337,18 @@ function renderOpen(gr) {
     }
 
     for (const section of plan.sections) {
-      let title;
-      let notes;
-
-      if (section.key === "today") {
-        title = "Today";
-        // On a work day the limit that matters is his own: free until 5, then getting ready.
-        notes = [plan.freeUntilLeave ? "You're free until 5" : plan.officeLeftToday ? "Offices open until 5" : "", off];
-      } else if (section.key === "day") {
-        title = wkName(section.day, true);
-        const kindNote = {
-          off: "Your day off",
-          sleep: "Off, after you sleep",
-          shift: "Before your shift",
-          work: "Before your shift"
-        }[section.kind] || "";
-        notes = [kindNote, oDate(section.day, true)];
-      } else {
-        title = "After that";
-        notes = ["Each on its day"];
-      }
-
-      const block = oSection(title, notes);
+      const block = oHead(section, plan, off);
       if (section.key === "later") block.classList.add("o-later");
-      section.rows.forEach((row, i) => {
-        if (section.key === "today" && i === 0) {
-          block.append(oHero(row));
-          return;
-        }
-        const marker = section.key === "later"
-          ? UP(row.day - plan.t0 <= 6 ? wkName(row.day) : oDate(row.day))
-          : String(i + 1).padStart(2, "0");
-        block.append(oStandardRow(row, marker, plan.t0));
-      });
+      if (section.key === "today") {
+        block.append(oToday(section, plan));
+      } else {
+        section.rows.forEach((row, i) => {
+          const marker = section.key === "later"
+            ? UP(row.day - plan.t0 <= 6 ? wkName(row.day) : oDate(row.day))
+            : String(i + 1).padStart(2, "0");
+          block.append(oStandardRow(row, marker, plan.t0));
+        });
+      }
 
       if (section.key === "day" && section.fold.length) {
         const open = state.openFolds.has("day");
