@@ -355,6 +355,618 @@ textarea{width:100%;margin-top:12px;border:1px solid var(--line);border-radius:1
 .view-open .bar{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .bar .b-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:9px 0}
 .bar button{flex:none;font-weight:700;color:#7a4a00;padding:10px 12px;min-height:44px}
+
+/* OPEN, by when he can do it (2026-11-13): the Now screen's sibling. Serif heads, mono labels, hairlines, one amber button. */
+.o-screen button,
+.o-screen [role="button"] {
+  min-height: 40px;
+}
+
+.o-screen .topline {
+  flex-wrap: wrap;
+  align-items: baseline;
+  row-gap: 8px;
+}
+
+.o-screen .eyebrow {
+  line-height: 1.6;
+  letter-spacing: .08em;
+}
+
+.o-hi {
+  margin-top: 22px;
+  color: var(--mut);
+  font: italic 400 20px/1.3 var(--greet);
+  overflow-wrap: anywhere;
+}
+
+.o-lead {
+  margin-top: 18px;
+  color: var(--ink);
+  font: 500 28px/1.2 var(--greet);
+  letter-spacing: -.01em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.o-hi + .o-lead {
+  margin-top: 6px;
+}
+
+.o-dim {
+  color: var(--dim);
+}
+
+.o-count {
+  margin-top: 14px;
+  color: var(--mut);
+  font: 400 11px/1.6 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.o-screen .week {
+  margin-top: 20px;
+}
+
+.o-dc {
+  margin-top: 6px;
+  color: var(--dim);
+  font: 400 10px/1.4 var(--mono);
+}
+
+.o-section,
+.o-screen .o-desk,
+.o-screen > .grp {
+  margin-top: 40px;
+}
+
+.o-sec {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.o-sec h2 {
+  min-width: 0;
+  font: 500 26px/1.15 var(--greet);
+  overflow-wrap: anywhere;
+}
+
+.o-note {
+  flex: 0 0 auto;
+  max-width: 46%;
+  color: var(--mut);
+  font: 400 10.5px/1.5 var(--mono);
+  letter-spacing: .06em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.o-note > span {
+  display: block;
+}
+
+.o-hero {
+  padding: 22px 0 6px;
+  cursor: pointer;
+}
+
+.o-kicker {
+  color: var(--amber);
+  font: 500 11px/1.5 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.o-hero h3 {
+  margin-top: 8px;
+  font: 500 24px/1.2 var(--greet);
+  overflow-wrap: anywhere;
+}
+
+.o-hero p {
+  margin-top: 8px;
+  color: var(--mut);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.o-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 16px;
+}
+
+.o-actions .pill {
+  flex: 0 1 auto;
+  max-width: 100%;
+  padding-block: 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.o-move {
+  min-height: 40px;
+  color: var(--mut);
+  font-size: 14.5px;
+}
+
+.o-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.o-no {
+  padding-top: 3px;
+  color: var(--dim);
+  font: 400 12px/1.5 var(--mono);
+  overflow-wrap: normal;
+}
+
+.o-body {
+  min-width: 0;
+}
+
+.o-tt {
+  color: var(--ink);
+  font-size: 16.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.o-row .o-tt,
+.o-q .o-tt {
+  overflow-wrap: anywhere;
+}
+
+.o-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.o-tag {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--mut);
+  font: 400 10px/1.4 var(--mono);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.o-tag.o-fixed {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.o-ss {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--mut);
+  font-size: 13.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.o-go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  max-width: 100%;
+  margin-top: 4px;
+  color: var(--ink);
+  font: 600 14.5px/1.4 var(--sans);
+  overflow-wrap: anywhere;
+}
+
+.o-fg {
+  max-width: 110px;
+  padding-top: 2px;
+  font: 500 14px/1.4 var(--mono);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.o-fold {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 0 16px 42px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  font-size: 14.5px;
+}
+
+.o-fold > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.o-fold small {
+  display: block;
+  margin-top: 4px;
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.o-fold .chev {
+  flex: none;
+  margin-right: 3px;
+  transition: none;
+}
+
+.o-fold[aria-expanded="true"] .chev {
+  margin-top: 4px;
+  transform: rotate(-135deg);
+}
+
+.o-q {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.o-q > .o-body {
+  flex: 1;
+}
+
+.o-why {
+  margin-top: 3px;
+  color: var(--mut);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.o-q-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.o-q .act {
+  flex: none;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.o-sec + .o-row,
+.o-sec + .o-q {
+  border-top: 0;
+}
+
+.o-prose {
+  margin-top: 14px;
+  color: var(--mut);
+  font: 400 17px/1.5 var(--greet);
+  overflow-wrap: anywhere;
+}
+
+.o-prose .o-go {
+  margin: 0 0 0 6px;
+  vertical-align: baseline;
+}
+
+.o-desk .hold-h > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.o-end {
+  margin-top: 28px;
+  color: var(--dim);
+  font: 400 10.5px/1.6 var(--mono);
+  letter-spacing: .08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+@media (max-width: 359px) {
+  .o-q {
+    flex-wrap: wrap;
+  }
+
+  .o-q > .o-body {
+    flex-basis: 100%;
+  }
+
+  .o-q-actions {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+}
+/* review fixes after the first real render: the week's numbers on one line, room for a date marker, quieter answer text */
+.o-screen .day .n{width:22px;height:22px;line-height:22px;margin:2px auto 5px}
+.o-later .o-row{grid-template-columns:52px minmax(0,1fr) auto}
+.o-q .o-tt{font-size:16px;font-weight:500}
+.o-said .o-tt{color:var(--mut)}
+.o-answer{flex:0 1 44%;text-align:right;font-size:13.5px;font-weight:600;overflow-wrap:anywhere}
+/* Polish pass (2026-11-13): Codex's critique of the first real render, applied where it fits the brief. Left out on review:
+   borderless answer buttons (the owner asked for answers that look like buttons) and amounts demoted under the title
+   (the settled direction keeps the figure bold at the row's edge). */
+/* Opening */
+.o-lead {
+  font-size: clamp(28px, 7.3vw, 31px);
+  line-height: 1.16;
+  text-wrap: pretty;
+}
+
+.o-lead .o-dim {
+  display: block;
+  margin-top: 12px;
+  color: var(--mut);
+  font: 400 14px/1.5 var(--sans);
+  letter-spacing: normal;
+}
+
+.o-count {
+  margin-top: 16px;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: .04em;
+}
+
+.o-screen .week {
+  margin-top: 14px;
+}
+
+.o-screen .week .dbar {
+  height: 12px;
+  border-radius: 3px;
+}
+
+.o-dc {
+  margin-top: 4px;
+  color: var(--mut);
+  font: 400 10px/1.4 var(--mono);
+}
+
+/* Section rhythm */
+.o-section {
+  margin-top: 32px;
+}
+
+.o-sec {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 12px;
+}
+
+.o-sec h2 {
+  flex: 1 0 auto;
+  max-width: 100%;
+  font: 500 24px/1.2 var(--greet);
+}
+
+.o-note {
+  flex: 0 1 auto;
+  max-width: 100%;
+  margin-left: auto;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .04em;
+}
+
+/* One primary action */
+.o-hero {
+  padding: 18px 0 20px;
+}
+
+.o-hero h3 {
+  font: 500 26px/1.15 var(--greet);
+  letter-spacing: -.01em;
+}
+
+.o-hero p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.o-actions {
+  margin-top: 14px;
+}
+
+.o-actions .pill {
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.o-move {
+  font-size: 14px;
+}
+
+/* Rows */
+.o-row {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 14px 0;
+}
+
+.o-no {
+  padding-top: 1px;
+  font: 400 11px/22px var(--mono);
+}
+
+.o-tt {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.o-ss {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.o-go {
+  min-height: 40px;
+  margin-top: 2px;
+  font: 500 14px/1.4 var(--sans);
+  white-space: normal;
+}
+
+.o-tags {
+  gap: 4px 12px;
+}
+
+.o-tag {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: 10px;
+  letter-spacing: .02em;
+}
+
+/* Saturday disclosure */
+.o-fold {
+  align-items: flex-start;
+  padding: 14px 0 14px 34px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.o-fold small {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.o-fold .chev,
+.o-fold[aria-expanded="true"] .chev {
+  margin-top: 6px;
+}
+
+/* Later dates */
+.o-later .o-row {
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+}
+
+.o-later .o-no {
+  color: var(--mut);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.o-later .o-ss {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+/* Questions and answers */
+.o-q .o-tt {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.o-why {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Handling */
+.o-prose {
+  margin-top: 12px;
+  font: 400 14px/1.55 var(--sans);
+}
+
+.o-prose .o-go {
+  display: flex;
+  width: fit-content;
+  margin: 4px 0 0;
+}
+
+/* Tower disclosure and finish */
+.o-screen .o-desk {
+  margin-top: 28px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+}
+
+.o-desk .hold-h {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 16px 0;
+  font: 500 16px/1.35 var(--sans);
+  text-align: left;
+}
+
+.o-desk .hold-h .sub {
+  display: block;
+  margin-top: 4px;
+  color: var(--mut);
+  font: 400 13px/1.5 var(--sans);
+}
+
+.o-desk .hold-h .cnt {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  color: var(--mut);
+  font: 400 11px/22px var(--mono);
+}
+
+.o-end {
+  margin-top: 20px;
+  font-size: 10.5px;
+  letter-spacing: .06em;
+}
+
+/* Neutral keyboard focus for secondary controls */
+.o-screen :is(
+  .o-row,
+  .o-hero,
+  .o-q,
+  .o-fold,
+  .o-go,
+  .o-move,
+  .o-q .act,
+  .o-desk .hold-h
+):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.o-desk .hold-h .cnt{padding-right:6px}
 </style>
 </head>
 <body>
@@ -784,6 +1396,236 @@ function showRest() {
   state.showRest = true; render(); showPane("open", true);
 }
 
+// The Open screen's sorting: which item lands in Today, a named day, later, the quick questions, or Cedric's side.
+// Pure (no page state, no DOM) so screens/tests_open_plan.js can run it under Node. Built by Codex from the 2026-11-13 brief.
+// ==== OPEN PLAN (pure) ====
+const opZone = "America/New_York";
+const opDateFormat = new Intl.DateTimeFormat("en-US", {
+  timeZone: opZone, year: "numeric", month: "2-digit", day: "2-digit"
+});
+const opHourFormat = new Intl.DateTimeFormat("en-US", {
+  timeZone: opZone, hour: "2-digit", hourCycle: "h23"
+});
+const opWeekdays = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+];
+const opPassive = new Set([
+  "done", "still", "later", "drop", "park30", "confirmed_by_owner"
+]);
+const opGroups = [
+  "asks", "rest", "yours", "with_cedric", "checking", "cedric", "waiting", "parked"
+];
+
+function opDay(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split("-").map(Number);
+    return Math.round(Date.UTC(y, m - 1, d) / 864e5);
+  }
+  const parts = opDateFormat.formatToParts(new Date(value));
+  const get = type => Number(parts.find(p => p.type === type).value);
+  return Math.round(Date.UTC(get("year"), get("month") - 1, get("day")) / 864e5);
+}
+
+function opWeekday(day) {
+  return new Date(day * 864e5).getUTCDay();
+}
+
+function opHeavy(x) {
+  return x.weight === "heavy" || x.weight === "bad_news";
+}
+
+function opOffice(x) {
+  return x.needs_office_hours === true || !!(x.handoff && x.handoff.kind === "call");
+}
+
+function opDueOrder(a, b) {
+  return ((a.dueN ?? Infinity) - (b.dueN ?? Infinity)) || 0;
+}
+
+function opOrder(a, b) {
+  return Number(b.fixed) - Number(a.fixed)
+    || Number(b.x.weight === "urgent") - Number(a.x.weight === "urgent")
+    // The big ones and the ones truly dated for this day lead; what merely moved here follows (and is what a long day folds).
+    || Number(opHeavy(b.x)) - Number(opHeavy(a.x))
+    || Number(a.moved !== null || a.dueN === null) - Number(b.moved !== null || b.dueN === null)
+    || opDueOrder(a, b)
+    || a.index - b.index;
+}
+
+function opRow(row) {
+  const { x, g, day, moved, times, fixed } = row;
+  return { x, g, day, moved, times, fixed };
+}
+
+function opPlan(gr, ctx) {
+  const t0 = opDay(ctx.now);
+  const weekday = n => opWeekday(n) >= 1 && opWeekday(n) <= 5;
+  const hour = Number(opHourFormat.formatToParts(new Date(ctx.now))
+    .find(p => p.type === "hour").value);
+  const officeLeftToday = weekday(t0) && hour < 17;
+  const kinds = new Map((ctx.shiftDays || []).map(d => [opDay(d.day), d.kind ?? null]));
+  const kind = n => kinds.get(n) ?? null;
+  const work = n => kind(n) === "shift" || kind(n) === "work";
+  const cap = n => work(n) ? 3 : kind(n) === "off" ? 6 : 4;
+  const findDay = (from, accept) => {
+    for (let n = from; n <= from + 60; n++) {
+      if (accept(n)) return n;
+    }
+    return from;   // never throw inside a render: fall back to the day asked for
+  };
+  const freeDay = from => findDay(from, n => !work(n));
+  const officeDay = from => findDay(from, n => weekday(n) && (n > t0 || officeLeftToday));
+
+  // Deduplicate before routing so classification cannot change which copy wins.
+  const seen = new Set();
+  const groups = {};
+  for (const g of opGroups) {
+    groups[g] = [];
+    for (const x of gr[g] || []) {
+      if (seen.has(x.id)) continue;
+      seen.add(x.id);
+      if (["done", "dropped", "closed"].includes(x.status)) continue;
+      groups[g].push({ x, g });
+    }
+  }
+
+  const checking = [
+    ...groups.checking.map(row => ({ ...row, via: "watch" })),
+    ...groups.with_cedric.map(row => ({ ...row, via: "sent" }))
+  ];
+  const mine = {
+    cedric: groups.cedric, waiting: groups.waiting, parked: groups.parked
+  };
+  const desk = [];
+  const answers = [];
+  const todo = [];
+  const owners = [...groups.asks, ...groups.rest, ...groups.yours];
+  owners.forEach(({ x, g }, index) => {
+    const choices = x.choices || [];
+    const code = choice => String(choice.code).toLowerCase();
+    const codes = choices.map(code);
+    const extra = codes.filter(c => !opPassive.has(c));
+    const question = !!x.ask && codes.includes("done")
+      && !(x.card && x.card.primary && x.card.primary.handoff === true);
+    if (!x.ask && !x.card && x.source_kind === "chat") {
+      desk.push({ x, g });
+    } else if (question && extra.length === 0
+      && (x.confirm_kind === "bank_tx" || x.confirm_kind === "email")) {
+      checking.push({ x, g, via: x.confirm_kind === "bank_tx" ? "bank" : "email" });
+    } else if (question && extra.length <= 1) {
+      answers.push({
+        x, g, why: x.confirm_kind === "his_word" ? "know" : "call",
+        alt: extra.length === 1 ? choices.find(c => code(c) === extra[0]) : null
+      });
+    } else {
+      const dueN = opDay(x.due);
+      todo.push({ x, g, index, dueN, moved: dueN !== null && dueN < t0 ? dueN : null });
+    }
+  });
+
+  const placed = [];
+  const counts = new Map();
+  const place = (row, day) => {
+    const { x, dueN } = row;
+    const moved = opOffice(x) && dueN === t0 && day > t0 && !officeLeftToday
+      ? t0 : row.moved;
+    placed.push({
+      ...row, day, moved, times: x.defer_count || 0,
+      fixed: !!(x.hard_deadline && opDay(x.hard_deadline) === day)
+    });
+    counts.set(day, (counts.get(day) || 0) + 1);
+  };
+  const pending = [];
+  for (const row of todo) {
+    const { x, dueN } = row;
+    if (x.weight === "urgent") {
+      place(row, opOffice(x) ? officeDay(t0) : t0);
+    } else if (dueN !== null && dueN >= t0) {
+      let day = opOffice(x) ? officeDay(dueN) : dueN;
+      if (opHeavy(x) && day === t0 && work(t0) && !opOffice(x)
+        && !(x.hard_deadline && opDay(x.hard_deadline) <= t0)) {
+        day = freeDay(t0 + 1);
+      }
+      place(row, day);
+    } else {
+      pending.push(row);
+    }
+  }
+  pending.sort((a, b) => Number(opHeavy(b.x)) - Number(opHeavy(a.x))
+    || opDueOrder(a, b) || a.index - b.index);
+  for (const row of pending) {
+    const office = opOffice(row.x);
+    let day = office ? officeDay(t0) : freeDay(t0);
+    if (office) {
+      while ((counts.get(day) || 0) >= cap(day)) day = officeDay(day + 1);
+    }
+    place(row, day);
+  }
+
+  placed.sort((a, b) => a.day - b.day || opOrder(a, b));
+  const sections = [];
+  const today = placed.filter(row => row.day === t0);
+  if (today.length) {
+    sections.push({ key: "today", day: t0, kind: kind(t0), rows: today.map(opRow) });
+  }
+  const next = placed.find(row => row.day > t0 && row.day <= t0 + 3);
+  if (next) {
+    const rows = placed.filter(row => row.day === next.day);
+    const split = rows.length > 5 ? 4 : rows.length;
+    sections.push({
+      key: "day", day: next.day, kind: kind(next.day),
+      rows: rows.slice(0, split).map(opRow), fold: rows.slice(split).map(opRow)
+    });
+  }
+  const later = placed.filter(row => row.day !== t0 && (!next || row.day !== next.day));
+  if (later.length) sections.push({ key: "later", kind: null, rows: later.map(opRow) });
+  const perDay = {};
+  for (const [day, count] of counts) {
+    if (day >= t0 && day <= t0 + 6) perDay[day] = count;
+  }
+  const needCount = placed.length + answers.length + desk.length;
+  const mineCount = checking.length + mine.cedric.length + mine.waiting.length + mine.parked.length;
+  const bank = ctx.feeds && ctx.feeds.bank;
+  return {
+    t0, officeLeftToday, sections, answers, checking, mine, desk, perDay,
+    needCount, mineCount, total: needCount + mineCount,
+    bankStale: bank && bank.is_stale ? { through: bank.data_through || null } : null
+  };
+}
+
+function opNumber(n) {
+  return n >= 1 && n <= 12
+    ? ["one", "two", "three", "four", "five", "six", "seven", "eight",
+      "nine", "ten", "eleven", "twelve"][n - 1]
+    : String(n);
+}
+
+function opLead(plan) {
+  const today = plan.sections.find(s => s.key === "today");
+  const rows = today ? today.rows : [];
+  let s1 = "Nothing needs you today.";
+  if (rows.length) {
+    const calls = rows.every(({ x }) => x.handoff && x.handoff.kind === "call");
+    s1 = "Today needs " + opNumber(rows.length)
+      + (calls ? (rows.length === 1 ? " phone call" : " phone calls")
+        : (rows.length === 1 ? " thing" : " things"))
+      + " from you" + (calls && plan.officeLeftToday ? ", before five." : ".");
+  }
+  const next = plan.sections.find(s => s.key === "day");
+  const s2 = next
+    // A "sleep" day is a day off: he comes home from the night shift, sleeps, and does not work that night (owner, 2026-11-13).
+    ? "Everything else waits for " + opWeekdays[opWeekday(next.day)]
+      + (next.kind === "off" || next.kind === "sleep" ? ", when you're off." : " or later.")
+    : plan.sections.some(s => s.key === "later") ? "Everything else can wait." : "";
+  const c = plan.checking.length;
+  let s3 = c ? opNumber(c) + (c === 1 ? " thing" : " things")
+    + " I can check myself, so I'm not asking you." : "";
+  if (s3) s3 = s3[0].toUpperCase() + s3.slice(1);
+  return { s1, s2, s3 };
+}
+// ==== END OPEN PLAN ====
+
 // ---------- OPEN: everything that isn't done ----------
 const UP = s => String(s || "").toUpperCase();
 function rowMeta(x, g) {
@@ -866,54 +1708,511 @@ function needRow(x, g, amber) {
   if (line.childNodes.length) row.append(line);
   return row;
 }
-// One sentence from Cedric about the first move, built from the top item's pick when it reads as a plain instruction.
-function firstMove(need) {
-  if (!need.length) return "Nothing needs you right now.";
-  const x = need[0][0], pk = pickText(x).replace(/[.!]+$/, "").trim();
-  if (pk && pk.length <= 64 && !/\b(me|my|I|you|your)\b/.test(pk)) return "First, I'd " + pk.charAt(0).toLowerCase() + pk.slice(1) + ".";
-  const h = String(headline(x) || "").replace(/[.!]+$/, "").trim();
-  if (h && h.length <= 56 && !/\?/.test(h)) return "First, " + h.charAt(0).toLowerCase() + h.slice(1) + ".";
-  return "Start with the first one that still needs you.";
+// ---------- the Open screen, by when he can do it (owner's pick 2026-11-13; layout built by Codex, reviewed) ----------
+// Format planned day numbers without shifting a date across midnight.
+function oDate(day, withWeekday = false) {
+  return dayDate(day).toLocaleDateString("en-US", {
+    timeZone: NY,
+    ...(withWeekday ? { weekday: "short" } : {}),
+    month: "short",
+    day: "numeric"
+  }).replace(/,/g, "");
 }
-function heldLine(S) {
-  const today = nyDay(nowMs()); let due = 0, past = 0;
-  for (const [, rows] of S) for (const [x, g] of rows) { if (g === "cedric" || !x.due) continue; const d = nyDay(Date.parse(x.due)); if (d < today || (d === today && Date.parse(x.due) < nowMs())) past++; else if (d === today) due++; }
-  const k = due + past;
-  if (!k) return "Nothing in here needs you today.";
-  if (!past) return k + " of these come due today.";
-  if (!due) return k + " of these " + (k === 1 ? "is" : "are") + " past due.";
-  return k + " of these are due today or past due.";
+
+// Private mode shows only the action's verb (Call, Pay, Open): the rest of a label names people, offices and amounts.
+const oVerb = label => String(label || "").trim().split(/\s+/)[0] || "Open";
+
+// Give tappable rows keyboard access without activating their nested buttons.
+function oTapRow(className, x, ...children) {
+  return el("div", {
+    class: className,
+    "data-id": x.id,
+    role: "button",
+    tabindex: "0",
+    onclick: () => openItem(x.id),
+    onkeydown: e => {
+      if (e.target !== e.currentTarget) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openItem(x.id);
+      }
+    }
+  }, children);
 }
+
+// Keep a nested action from also opening its containing row.
+function oButton(className, label, run) {
+  return el("button", {
+    type: "button",
+    class: className,
+    onclick: e => {
+      e.stopPropagation();
+      run();
+    },
+    onkeydown: e => e.stopPropagation()
+  }, label);
+}
+
+// Keep fold state across renders using the three screen-specific keys.
+function oToggleFold(key) {
+  state.openFolds = state.openFolds || new Set();
+  if (state.openFolds.has(key)) state.openFolds.delete(key);
+  else state.openFolds.add(key);
+  haptic();
+  render();
+}
+
+// Share the section rhythm while allowing either note line to be absent.
+function oSection(title, notes = []) {
+  const lines = notes.filter(Boolean);
+  return el("section", { class: "o-section" },
+    el("div", { class: "o-sec" },
+      el("h2", {}, title),
+      lines.length
+        ? el("div", { class: "o-note" },
+            lines.map(line => el("span", {}, line)))
+        : null
+    )
+  );
+}
+
+// Render plan metadata directly so placement and ordering stay in opPlan.
+function oStandardRow(row, marker, t0) {
+  const { x } = row;
+  const card = cardOf(x);
+  const pa = primaryAction(x);
+  const figure = rowFigure(x);
+  // A pick written for a day that has passed names the wrong day; leave it off (as the old rows did).
+  const subtitle = (pastDay(x) ? "" : pickText(x))
+    || (!card ? String(x.detail || "").split(/\r?\n/)[0] : "");
+  const tags = [];
+
+  if (row.fixed) {
+    tags.push(el("span", { class: "o-tag o-fixed" }, "Can't move"));
+  }
+  if (row.times >= 2) {
+    tags.push(el("span", { class: "o-tag" },
+      "Moved " + row.times + " times"));
+  } else if (row.moved != null) {
+    const from = t0 - row.moved > 6
+      ? oDate(row.moved)
+      : wkName(row.moved);
+    tags.push(el("span", { class: "o-tag" }, "Moved from " + from));
+  }
+
+  return oTapRow("o-row", x,
+    el("span", { class: "o-no" }, marker),
+    el("div", { class: "o-body" },
+      el("div", { class: "o-tt" }, fp(listTitle(x), privLabel(x))),
+      tags.length ? el("div", { class: "o-tags" }, tags) : null,
+      subtitle ? el("div", { class: "o-ss hide-p" }, subtitle) : null,
+      pa ? oButton("o-go",
+        fp(pa.label + " ›", oVerb(pa.label) + " ›"),
+        () => runRowAction(x, pa)) : null
+    ),
+    figure ? el("div", { class: "o-fg hide-p" }, figure) : null
+  );
+}
+
+// Give today's first item its full action and the preferred deferral choice.
+function oHero(row) {
+  const { x } = row;
+  const card = cardOf(x);
+  const pa = primaryAction(x);
+  const choices = choicesFor(x).list;
+  const move = choices.find(c => c.code === "later")
+    || choices.find(c => c.code === "still");
+  const subtitle = (pastDay(x) ? "" : pickText(x)) || (card && card.figure_caption);
+  const actions = [];
+
+  if (pa) {
+    actions.push(oButton("pill",
+      fp(pa.label, oVerb(pa.label)),
+      () => runRowAction(x, pa)));
+  }
+  if (move) {
+    actions.push(oButton("o-move", "Move it",
+      () => choose(x, move, "open")));
+  }
+
+  return oTapRow("o-hero", x,
+    el("div", { class: "o-kicker" },
+      "01",
+      x.office_label
+        ? el("span", { class: "hide-p" }, " · " + x.office_label)
+        : null
+    ),
+    el("h3", {}, fp(headline(x), privLabel(x))),
+    subtitle ? el("p", { class: "hide-p" }, subtitle) : null,
+    actions.length ? el("div", { class: "o-actions" }, actions) : null
+  );
+}
+
+// The question as Cedric wrote it on the item, when it is one short question; else the item's headline.
+function oAsk(x) {
+  const a = String(x.ask || "").replace(/\s+/g, " ").trim();
+  return a && a.length <= 90 && /\?$/.test(a) ? a : headline(x);
+}
+
+// Keep answer choices explicit and send alternative actions to the item page.
+function oQuestion(answer) {
+  const { x, why, alt } = answer;
+  const past = pastDay(x);
+  const choices = x.choices || [];
+  const yes = past ? PAST_DONE : choices.find(c => c.code === "done");
+  const buttons = [];
+
+  // With a second real choice ("Keep Feb 12" or "Call"), the first button takes that choice's own first word.
+  const first = alt && yes && !past ? String(choiceLabel(yes) || "").split(/[\s,]/)[0] : "";
+  if (yes) {
+    buttons.push(oButton("act", first && !/^yes$/i.test(first) && first.length <= 8 ? first : "Yes", () => choose(x, yes, "open")));
+  }
+
+  if (alt) {
+    const code = String(alt.code || "");
+    const given = String(choiceLabel(alt) || "");
+    const label = given && given.length <= 12
+      ? given
+      : code.charAt(0).toUpperCase() + code.slice(1);
+    buttons.push(oButton("act", fp(label, code.charAt(0).toUpperCase() + code.slice(1)),
+      () => openItem(x.id)));
+  } else {
+    const still = past
+      ? PAST_STILL
+      : choices.find(c => c.code === "still" || c.code === "later");
+    if (still) {
+      buttons.push(oButton("act", "Not yet",
+        () => choose(x, still, "open")));
+    }
+  }
+
+  return oTapRow("o-q", x,
+    el("div", { class: "o-body" },
+      el("div", { class: "o-tt" }, fp(oAsk(x), privLabel(x))),
+      el("div", { class: "o-why" },
+        why === "know" ? "Only you'd know" : "Your call")
+    ),
+    el("div", { class: "o-q-actions" }, buttons)
+  );
+}
+
+// A quick question he answered this visit: same place, his answer where the buttons were, one quiet line on what happens next.
+function oSaid(x, g) {
+  const tap = lastTap(x) || {};
+  return oTapRow("o-q o-said", x,
+    el("div", { class: "o-body" },
+      el("div", { class: "o-tt" }, fp(oAsk(x), privLabel(x))),
+      el("div", { class: "o-why" }, quietText(x, g))),
+    el("div", { class: "o-answer" }, fp("You answered: " + (tap.code === "done" ? "Yes" : tap.code === "still" || tap.code === "later" ? "Not yet" : (tap.label || tap.code || "")), "Answered")));
+}
+
+// Preserve the existing held-group markup and row behavior.
+function oHeldGroup(name, rows) {
+  return el("div", { class: "hgrp" },
+    el("h3", {},
+      el("span", {}, name),
+      el("small", {}, String(rows.length))),
+    rows.map(({ x, g }) => openRow(x, g))
+  );
+}
+
+// Keep the bank-data qualification identical in both privacy modes.
+function oBankNote(stale) {
+  if (!stale) return "";
+  if (stale.through == null) {
+    return " My bank data is out of date, so I can't confirm them yet.";
+  }
+  const through = /^\d{4}-\d{2}-\d{2}$/.test(stale.through)
+    ? dayDate(dateDay(stale.through))
+    : new Date(stale.through);
+  const date = through.toLocaleDateString("en-US", {
+    timeZone: NY,
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  }).replace(/,/g, "");
+  return " My bank data only runs through " + date
+    + ", so I can't confirm them yet.";
+}
+
+// Build the handling paragraphs from fixed templates and private counts.
+function oHandling(plan) {
+  const section = oSection("What I'm handling", ["Nothing for you"]);
+  const templates = [
+    ["bank", "I can check these against the bank myself: ",
+      n => n + " I can check against the bank myself."],
+    ["email", "I can check these in your email myself: ",
+      n => n + " I can check in your email myself."],
+    ["watch", "I'm watching for these to show up: ",
+      n => "I'm watching for " + n + " to show up."],
+    ["sent", "You answered these and I have them: ",
+      n => "You answered " + n + " and I have them."]
+  ];
+
+  for (const [via, prefix, privateText] of templates) {
+    const rows = plan.checking.filter(row => row.via === via);
+    if (!rows.length) continue;
+    const titles = rows.map(({ x }) => listTitle(x)).join(" · ");
+    const suffix = via === "bank" ? oBankNote(plan.bankStale) : "";
+    section.append(el("p", { class: "o-prose" },
+      fp(prefix + titles + "." + suffix,
+        privateText(rows.length) + suffix)));
+  }
+
+  const mine = plan.mine;
+  const count = mine.cedric.length + mine.waiting.length + mine.parked.length;
+  if (count) {
+    const parts = [];
+    if (mine.cedric.length) parts.push(mine.cedric.length + " on my side");
+    if (mine.waiting.length) {
+      parts.push(mine.waiting.length + " waiting on other people");
+    }
+    if (mine.parked.length) {
+      parts.push(mine.parked.length + " set aside until a date");
+    }
+
+    const text = "I'm also holding " + count + " more: "
+      + parts.join(", ") + ".";
+    const open = state.openFolds.has("mine");
+    const toggle = oButton("o-go", open ? "Hide" : "See all " + count + " ›",
+      () => oToggleFold("mine"));
+    toggle.setAttribute("aria-expanded", String(open));
+    section.append(el("p", { class: "o-prose" }, fp(text, text), toggle));
+
+    if (open) {
+      const groups = [
+        ["On my side", mine.cedric],
+        ["Waiting on others", mine.waiting],
+        ["Set aside until a date", mine.parked]
+      ];
+      for (const [name, rows] of groups) {
+        if (rows.length) section.append(oHeldGroup(name, rows));
+      }
+    }
+  }
+  return section;
+}
+
+// Rebuild the Open screen from the pure plan while preserving its scroll offset.
 function renderOpen(gr) {
-  const main = $("#openMain"), pane = main.parentNode, top = pane.scrollTop;
-  main.replaceChildren(topBar([eyeBtn()]));
-  if (state.error) { main.append(el("div", { class: "msg" }, state.error)); return; }
-  if (!state.tasks) { main.append(el("div", { class: "msg" }, "Loading…")); return; }
-  // Pile one: what needs him, plus what he tapped this visit (so the tap's result stays in place).
-  const sent = gr.with_cedric.filter(tappedThisVisit).map(x => [x, "with_cedric"]).concat(gr.checking.filter(tappedThisVisit).map(x => [x, "checking"]));
-  const need = gr.asks.map(x => [x, "asks"]).concat(gr.yours.map(x => [x, "yours"]));
-  const S = openSections(gr, new Set(sent.map(r => r[0].id))), held = S.reduce((a, s) => a + s[1].length, 0), n = held + need.length + sent.length;
-  main.append(el("div", { class: "pagehead" }, el("h1", {}, "Open · " + n), el("p", {}, ...fp(firstMove(need), need.length ? "Start with the top one." : "Nothing needs you right now."))));
-  if (need.length || sent.length) {
-    main.append(el("div", { class: "plabel" }, el("span", {}, "Needs you"), el("small", {}, String(need.length))));
-    main.append(el("div", { class: "pile" }, sent.map(([x, g]) => needRow(x, g, false)), need.map(([x, g], i) => needRow(x, g, i === 0))));
+  const main = $("#openMain");
+  const pane = main.parentNode;
+  const top = pane.scrollTop;
+
+  try {
+    main.classList.add("o-screen");
+    main.replaceChildren(topBar([eyeBtn()]));
+
+    if (state.error) {
+      main.append(el("div", { class: "msg" }, state.error));
+      return;
+    }
+    if (!state.tasks) {
+      main.append(el("div", { class: "msg" }, "Loading…"));
+      return;
+    }
+
+    state.openFolds = state.openFolds || new Set();
+    const plan = opPlan(gr, {
+      now: nowMs(),
+      shiftDays: (state.tasks.shift_days || []),
+      feeds: state.tasks.feeds
+    });
+    const lead = opLead(plan);
+    const days = shiftDays();
+    const off = offPill(days);
+    const now = new Date(nowMs());
+    const date = now.toLocaleDateString("en-US", {
+      timeZone: NY,
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    }).replace(/,/g, "");
+    const time = now.toLocaleTimeString("en-US", {
+      timeZone: NY,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
+
+    main.append(el("div", { class: "topline" },
+      el("div", { class: "eyebrow" }, "Open · " + date + " · " + time),
+      off ? el("span", { class: "offpill" }, off) : null
+    ));
+
+    const firstName = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
+      && tg.initDataUnsafe.user.first_name;
+    if (firstName) {
+      main.append(el("p", { class: "o-hi hide-p" }, firstName + ","));
+    }
+
+    const leadText = [lead.s1, lead.s2].filter(Boolean).join(" ");
+    main.append(
+      el("h1", { class: "o-lead" },
+        leadText,
+        lead.s3
+          ? el("span", { class: "o-dim" },
+              (leadText ? " " : "") + lead.s3)
+          : null),
+      el("p", { class: "o-count" },
+        plan.total + " open · " + plan.needCount + " need you · "
+          + plan.mineCount + " with me")
+    );
+
+    if (days.some(d => d.kind)) {
+      main.append(el("div", { class: "week", "aria-label": "Your week" },
+        days.map((d, i) => el("div", {
+          class: "day" + (i === 0 ? " today" : "")
+        },
+          el("small", {}, DOW[dayDate(d.n).getUTCDay()]),
+          el("div", { class: "n" }, String(dayDate(d.n).getUTCDate())),
+          el("div", {
+            class: "dbar" + (isWork(d.kind) ? " night"
+              : d.kind === "sleep" ? " rec" : d.kind ? "" : " unk"),
+            title: d.kind || "not known"
+          }),
+          el("div", { class: "o-dc" }, plan.perDay[d.n] || "·")
+        ))
+      ));
+    }
+
+    // A quick question he just answered stays where he tapped it, reading "You answered: ..." (the tap's result in place);
+    // any other tap made this visit shows in a short "Just now" pile at the top, as the old screen did.
+    state.openWas = state.openWas || new Map();
+    const tapped = gr.with_cedric.filter(tappedThisVisit)
+      .map(x => [x, "with_cedric"])
+      .concat(gr.checking.filter(tappedThisVisit).map(x => [x, "checking"]));
+    const said = tapped.filter(([x]) => state.openWas.has(x.id));
+    const sent = tapped.filter(([x]) => !state.openWas.has(x.id));
+    if (sent.length) {
+      main.append(
+        el("div", { class: "plabel" }, "Just now"),
+        el("div", { class: "pile" },
+          sent.map(([x, g]) => needRow(x, g, false)))
+      );
+    }
+
+    for (const section of plan.sections) {
+      let title;
+      let notes;
+
+      if (section.key === "today") {
+        title = "Today";
+        notes = [plan.officeLeftToday ? "Offices open until 5" : "", off];
+      } else if (section.key === "day") {
+        title = wkName(section.day, true);
+        const kindNote = {
+          off: "Your day off",
+          sleep: "Off, after you sleep",
+          shift: "Before your shift",
+          work: "Before your shift"
+        }[section.kind] || "";
+        notes = [kindNote, oDate(section.day, true)];
+      } else {
+        title = "After that";
+        notes = ["Each on its day"];
+      }
+
+      const block = oSection(title, notes);
+      if (section.key === "later") block.classList.add("o-later");
+      section.rows.forEach((row, i) => {
+        if (section.key === "today" && i === 0) {
+          block.append(oHero(row));
+          return;
+        }
+        const marker = section.key === "later"
+          ? UP(row.day - plan.t0 <= 6 ? wkName(row.day) : oDate(row.day))
+          : String(i + 1).padStart(2, "0");
+        block.append(oStandardRow(row, marker, plan.t0));
+      });
+
+      if (section.key === "day" && section.fold.length) {
+        const open = state.openFolds.has("day");
+        const count = section.fold.length;
+        block.append(el("button", {
+          type: "button",
+          class: "o-fold",
+          "aria-expanded": String(open),
+          onclick: () => oToggleFold("day")
+        },
+          el("span", {},
+            count + " smaller ones for " + wkName(section.day, true),
+            el("small", { class: "hide-p" },
+              section.fold.map(({ x }) => listTitle(x)).join(" · "))),
+          el("i", { class: "chev", "aria-hidden": "true" })
+        ));
+
+        if (open) {
+          section.fold.forEach((row, i) => {
+            const marker = String(section.rows.length + i + 1).padStart(2, "0");
+            block.append(oStandardRow(row, marker, plan.t0));
+          });
+        }
+      }
+      main.append(block);
+    }
+
+    if (plan.answers.length || said.length) {
+      const section = oSection("Only you can answer", ["A minute each"]);
+      plan.answers.forEach((a, i) => { if (!state.openWas.has(a.x.id)) state.openWas.set(a.x.id, state.openWas.size + i); });
+      const rows = plan.answers.map(a => [state.openWas.get(a.x.id), oQuestion(a)])
+        .concat(said.map(([x, g]) => [state.openWas.get(x.id), oSaid(x, g)]));
+      section.append(...rows.sort((a, b) => a[0] - b[0]).map(r => r[1]));
+      main.append(section);
+    }
+
+    if (plan.mineCount) main.append(oHandling(plan));
+
+    if (plan.desk.length) {
+      const count = plan.desk.length;
+      const open = state.openFolds.has("desk");
+      const fold = el("div", {
+        class: "o-desk hold" + (open ? " open" : "")
+      },
+        el("button", {
+          type: "button",
+          class: "hold-h",
+          "aria-expanded": String(open),
+          onclick: () => oToggleFold("desk")
+        },
+          el("span", {}, "At the tower",
+            el("span", { class: "sub" },
+              count + (count === 1 ? " job" : " jobs")
+                + " for me, whenever you're at the desk")),
+          el("span", { class: "cnt" },
+            String(count),
+            el("i", { class: "chev", "aria-hidden": "true" }))
+        )
+      );
+      if (open) {
+        fold.append(el("div", { class: "hold-in" },
+          el("div", { class: "hgrp" },
+            plan.desk.map(({ x, g }) => openRow(x, g)))));
+      }
+      main.append(fold);
+    }
+
+    const ups = (state.tasks.updates || []).slice(0, 15);
+    if (ups.length) {
+      main.append(el("div", { class: "grp" },
+        el("h2", {},
+          el("span", {}, "Recent updates"),
+          el("span", {}, String(ups.length))),
+        ups.map(updRow)));
+    }
+
+    if (!plan.total && !ups.length) {
+      main.append(el("div", { class: "empty" },
+        "I'm not holding anything right now."));
+    } else {
+      main.append(el("p", { class: "o-end" },
+        "That's everything · " + plan.total + " open"));
+    }
+
+    $("#openCount").textContent = plan.total ? String(plan.total) : "";
+  } finally {
+    pane.scrollTop = top;
   }
-  // Pile two: one fold. Closed by default; open by default only when nothing needs him.
-  if (held) {
-    const open = state.openHeld == null ? !need.length : state.openHeld;
-    const fold = el("div", { class: "hold" + (open ? " open" : "") },
-      el("button", { class: "hold-h", "aria-expanded": open ? "true" : "false", onclick: () => { state.openHeld = !open; haptic(); render(); } },
-        el("span", {}, held === 1 ? "I'm holding one thing" : "I'm holding " + held + " things", el("span", { class: "sub" }, heldLine(S))),
-        el("span", { class: "cnt" }, String(held), el("i", { class: "chev" }))));
-    if (open) fold.append(el("div", { class: "hold-in" }, S.map(([name, rows]) => el("div", { class: "hgrp" }, el("h3", {}, el("span", {}, name), el("small", {}, String(rows.length))), rows.map(([x, g]) => openRow(x, g))))));
-    main.append(fold);
-  }
-  const ups = (state.tasks.updates || []).slice(0, 15);
-  if (ups.length) main.append(el("div", { class: "grp" }, el("h2", {}, el("span", {}, "Recent updates"), el("span", {}, String(ups.length))), ups.map(updRow)));
-  if (!n && !ups.length) main.append(el("div", { class: "empty" }, "I'm not holding anything right now."));
-  else if (n) main.append(el("p", { class: "foot" }, "That's all of it. " + n + " open, " + (need.length ? need.length + " yours." : "none waiting on you.")));
-  $("#openCount").textContent = n ? String(n) : "";
-  pane.scrollTop = top;
 }
 function updRow(u) {
   const k = u.action_id || u.loop_id, open = state.openUpd.has(k), s = state.snap.get(u.loop_id);
