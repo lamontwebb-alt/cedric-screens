@@ -3068,8 +3068,9 @@ function choiceButtons(it) {
   const { list, primary } = choicesFor(it), others = list.filter(c => c !== primary);
   const alt = pastDay(it) ? "" : String(it.alternative || "").trim();
   if (alt && primary) {
-    let i = others.findIndex(c => c.alt);
-    if (i < 0) i = others.findIndex(c => !DEFER.has(c.code) && !/^(grant|revoke):/.test(c.code));
+    // Only a choice the item itself marks as the alternative carries the alternative's words. The old fallback
+    // guessed "the first other button" and put "Pay it Sun Nov 15..." under "Yes, paid" (found 2026-11-13).
+    const i = others.findIndex(c => c.alt);
     const used = (it.thread || []).some(e => e.code === "alternative" && e.status !== "cancelled" && e.status !== "superseded");
     if (i >= 0) { if (!similar(others[i].label, alt)) others[i] = { ...others[i], _sub: alt }; others.unshift(others.splice(i, 1)[0]); }
     else if (!used) others.unshift({ code: "alternative", label: alt });
